@@ -36,7 +36,7 @@ INCDEST =	@includedir@
 
 MANEXT =	1
 
-INSTALL =	@INSTALL@
+INSTALL =	@INSTALL@ -D
 BININSTALL =	@INSTALL_PROGRAM@ -m 755
 LIBINSTALL =	@INSTALL_DATA@
 HARDLINK =	ln -f
@@ -111,7 +111,7 @@ check :: all
 install :: @INSTALL_TARGETS@
 
 install_cli :: all_cli
-	$(BININSTALL) $(HFSUTIL) "$(BINDEST)/."
+	$(BININSTALL) $(HFSUTIL) "$(BINDEST)/$(HFSUTIL)"
 
 	for file in $(CLITARGETS); do  \
 		$(HARDLINK) "$(BINDEST)/$(HFSUTIL)" "$(BINDEST)/$$file";  \
@@ -126,7 +126,7 @@ install_cli :: all_cli
 
 install_tcl :: all_tcl
 	for file in $(TCLTARGETS); do  \
-		$(BININSTALL) $$file "$(BINDEST)/.";  \
+		$(BININSTALL) $$file "$(BINDEST)/$$file";  \
 	done
 
 	if [ -f "$(BINDEST)/hfs" ]; then  \
@@ -142,7 +142,7 @@ install_tcl :: all_tcl
 
 install_tk :: all_tk
 	for file in $(TKTARGETS); do  \
-		$(BININSTALL) $$file "$(BINDEST)/.";  \
+		$(BININSTALL) $$file "$(BINDEST)/$(TKTARGETS)";  \
 	done
 
 	for file in $(TKDOCS); do  \
