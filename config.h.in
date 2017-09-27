@@ -91,3 +91,5 @@ char *strstr(const char *, const char *);
 # ifndef HAVE_STRTOL
 long strtol(const char *, char **, int);
 # endif
+
+#define USE_INTERP_RESULT 1
