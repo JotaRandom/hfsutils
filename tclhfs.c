@@ -227,7 +227,7 @@ int getdir(Tcl_Interp *interp, volref *vref, const char *path)
 
 	  Tcl_AppendElement(interp, str);
 
-	  free(str);
+	  Tcl_Free(str);
 	}
 
       if (hfs_closedir(dir) == -1)
@@ -244,7 +244,7 @@ int getdir(Tcl_Interp *interp, volref *vref, const char *path)
 
       Tcl_AppendElement(interp, str);
 
-      free(str);
+      Tcl_Free(str);
     }
 
   return TCL_OK;
@@ -378,17 +378,12 @@ int file_cmd(ClientData clientData, Tcl_Interp *interp,
 	      return TCL_ERROR;
 	    }
 
-	  mem = ALLOC(char, bytes + 1);
-	  if (mem == 0)
-	    {
-	      interp->result = "out of memory";
-	      return TCL_ERROR;
-	    }
+	  mem = Tcl_Alloc(bytes + 1);
 
 	  bytes = hfs_read(file, mem, bytes);
 	  if (bytes == -1)
 	    {
-	      free(mem);
+	      Tcl_Free(mem);
 	      return error(interp, 0);
 	    }
 
@@ -902,7 +897,7 @@ int vol_cmd(ClientData clientData, Tcl_Interp *interp,
 	    }
 
 	  result = Tcl_Merge(listc, listv);
-	  free(listv);
+	  Tcl_Free(listv);
 
 	  Tcl_SetResult(interp, result, TCL_DYNAMIC);
 	}
@@ -1047,7 +1042,7 @@ int vol_cmd(ClientData clientData, Tcl_Interp *interp,
 	    }
 
 	  result = Tcl_Merge(fargc, fargv);
-	  free(fargv);
+	  Tcl_Free(fargv);
 
 	  Tcl_SetResult(interp, result, TCL_DYNAMIC);
 	}
@@ -1313,7 +1308,7 @@ int cmd_hfs(ClientData clientData, Tcl_Interp *interp,
 	  badblocks = ALLOCX(unsigned long, listc);
 	  if (listc && badblocks == 0)
 	    {
-	      free(listv);
+	      Tcl_Free(listv);
 
 	      interp->result = "out of memory";
 	      return TCL_ERROR;
@@ -1324,13 +1319,13 @@ int cmd_hfs(ClientData clientData, Tcl_Interp *interp,
 	      if (Tcl_ExprLong(interp, listv[i],
 			       (long *) &badblocks[i]) != TCL_OK)
 		{
-		  free(listv);
+		  Tcl_Free(listv);
 		  FREE(badblocks);
 		  return TCL_ERROR;
 		}
 	    }
 
-	  free(listv);
+	  Tcl_Free(listv);
 
 	  if (do_format(argv[2], partno, 0, argv[4], listc, badblocks) == -1)
 	    {
@@ -1352,6 +1347,7 @@ int cmd_hfs(ClientData clientData, Tcl_Interp *interp,
   else if (strcmp(argv[1], "chartrans") == 0)
     {
       char *result;
+      char *tclresult;
 
       if (argc != 5)
 	{
@@ -1387,7 +1383,11 @@ int cmd_hfs(ClientData clientData, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 
-      Tcl_SetResult(interp, result, TCL_DYNAMIC);
+      tclresult = Tcl_Alloc(strlen(result) + 1);
+      memcpy(tclresult, result, strlen(result) + 1);
+      free(result);
+
+      Tcl_SetResult(interp, tclresult, TCL_DYNAMIC);
     }
   else if (strcmp(argv[1], "version") == 0)
     {
