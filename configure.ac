@@ -64,9 +64,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
-m4_warn([obsolete],
-[AC_PROG_GCC_TRADITIONAL is obsolete; use AC_PROG_CC
-])dnl
 AC_REQUIRE(AC_PROG_CC)
 
 dnl Checks for header files.
