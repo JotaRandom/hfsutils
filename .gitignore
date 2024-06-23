@@ -1,0 +1,17 @@
+# Mac drippings
+.DS_Store
+
+# Autotools
+Makefile
+configure
+*~
+autom4te.cache
+confdefs.h
+config.log
+config.cache
+config.h.in
+
+# Vim
+*.swp
+*.swo
+Session.vim
