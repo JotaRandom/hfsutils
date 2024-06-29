@@ -64,8 +64,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
-AC_REQUIRE(AC_PROG_CC)
-
 dnl Checks for header files.
 
 AC_CHECK_HEADERS(unistd.h fcntl.h termios.h sys/ioctl.h)

@@ -21,7 +21,7 @@ dnl $Id: configure.in,v 1.5 1998/04/11 08:27:18 rob Exp $
 dnl
 
 AC_INIT(librsrc.h)
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
 AC_ARG_ENABLE(debug,
     [  --enable-debug          enable diagnostic debugging support])
@@ -40,7 +40,6 @@ AC_PROG_RANLIB
 
 dnl Checks for header files.
 
-AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h fcntl.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -57,4 +56,4 @@ AC_CHECK_FUNCS(mktime)
 
 dnl Create output files.
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT
