@@ -104,10 +104,10 @@ Makefile: config.status
 config.status: .stamp/configure .stamp/config.h.in Makefile.in
 	./config.status --recheck
 
-.stamp/configure: configure.in
+.stamp/configure: configure.ac
 	autoconf && touch .stamp/configure
 
-.stamp/config.h.in: configure.in acconfig.h
+.stamp/config.h.in: configure.ac acconfig.h
 	autoheader && touch .stamp/config.h.in
 
 ###############################################################################

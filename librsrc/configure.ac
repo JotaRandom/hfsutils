@@ -17,7 +17,7 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 dnl
-dnl $Id: configure.in,v 1.5 1998/04/11 08:27:18 rob Exp $
+dnl $Id: configure.ac,v 1.5 1998/04/11 08:27:18 rob Exp $
 dnl
 
 AC_INIT(librsrc.h)
