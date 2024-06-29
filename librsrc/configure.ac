@@ -56,4 +56,5 @@ AC_CHECK_FUNCS(mktime)
 
 dnl Create output files.
 
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
