@@ -14,6 +14,26 @@ config.h.in
 config.h
 config.status
 
+# Compiled output
+*.o
+*.a
+libhfs/os.c
+hattrib
+hcd
+hcopy
+hdel
+hdir
+hformat
+hfsutil
+hls
+hmkdir
+hmount
+hpwd
+hrename
+hrmdir
+humount
+hvol
+
 # Vim
 *.swp
 *.swo
