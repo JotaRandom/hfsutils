@@ -1,0 +1,40 @@
+# Mac drippings
+.DS_Store
+
+# Autotools
+.stamp
+Makefile
+configure
+*~
+autom4te.cache
+confdefs.h
+config.log
+config.cache
+config.h.in
+config.h
+config.status
+
+# Compiled output
+*.o
+*.a
+libhfs/os.c
+hattrib
+hcd
+hcopy
+hdel
+hdir
+hformat
+hfsutil
+hls
+hmkdir
+hmount
+hpwd
+hrename
+hrmdir
+humount
+hvol
+
+# Vim
+*.swp
+*.swo
+Session.vim

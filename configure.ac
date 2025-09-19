@@ -17,11 +17,12 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 dnl
-dnl $Id: configure.in,v 1.10 1998/09/15 19:19:42 rob Exp $
+dnl $Id: configure.ac,v 1.10 1998/09/15 19:19:42 rob Exp $
 dnl
 
-AC_INIT(libhfs/libhfs.h)
-AC_CONFIG_HEADER(config.h)
+AC_INIT
+AC_CONFIG_SRCDIR([libhfs/libhfs.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_SUBDIRS(libhfs librsrc)
 
@@ -63,11 +64,8 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
-AC_PROG_GCC_TRADITIONAL
-
 dnl Checks for header files.
 
-AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h fcntl.h termios.h sys/ioctl.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -83,12 +81,12 @@ AC_REPLACE_FUNCS(strdup strerror strstr strtol)
 AC_CHECK_FUNCS(setreuid)
 
 AC_CACHE_CHECK(for sys_errlist, hfs_cv_decl_syserrlist, [
-    AC_TRY_LINK([], [
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[
 	extern char *sys_errlist[];
 	extern int sys_nerr;
 
 	sys_errlist[sys_nerr - 1][0] = 0;
-    ], hfs_cv_decl_syserrlist=yes, hfs_cv_decl_syserrlist=no)
+    ]])],[hfs_cv_decl_syserrlist=yes],[hfs_cv_decl_syserrlist=no])
 ])
 
 if test "$hfs_cv_decl_syserrlist" = yes
@@ -298,4 +296,5 @@ fi
 
 dnl Create output files.
 
-AC_OUTPUT(hfsck/Makefile linux/Makefile Makefile)
+AC_CONFIG_FILES([hfsck/Makefile linux/Makefile Makefile])
+AC_OUTPUT

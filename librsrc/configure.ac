@@ -1,6 +1,6 @@
 dnl -*- shell-script -*-
 dnl
-dnl libhfs - library for reading and writing Macintosh HFS volumes
+dnl librsrc - library for reading and writing Macintosh resources
 dnl Copyright (C) 1996-1998 Robert Leslie
 dnl
 dnl This program is free software; you can redistribute it and/or modify
@@ -17,11 +17,11 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 dnl
-dnl $Id: configure.in,v 1.5 1998/04/11 08:27:12 rob Exp $
+dnl $Id: configure.ac,v 1.5 1998/04/11 08:27:18 rob Exp $
 dnl
 
-AC_INIT(libhfs.h)
-AC_CONFIG_HEADER(config.h)
+AC_INIT(librsrc.h)
+AC_CONFIG_HEADERS(config.h)
 
 AC_ARG_ENABLE(debug,
     [  --enable-debug          enable diagnostic debugging support])
@@ -37,13 +37,9 @@ AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
-AC_PROG_LN_S
-
-AC_PROG_GCC_TRADITIONAL
 
 dnl Checks for header files.
 
-AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h fcntl.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -55,9 +51,10 @@ AC_C_CONST
 
 dnl Checks for library functions.
 
-AC_FUNC_MEMCMP
+AC_SUBST(LIBOBJS)
 AC_CHECK_FUNCS(mktime)
 
 dnl Create output files.
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

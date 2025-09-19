@@ -200,16 +200,19 @@ dist ::
 Makefile: config.status
 	./config.status && touch .stamp/config.h
 
-.stamp/config.h: config.status
+.stamp:
+	mkdir $@
+
+.stamp/config.h: .stamp config.status
 	./config.status && touch .stamp/config.h
 
-config.status: .stamp/configure .stamp/config.h.in Makefile.in
+config.status: .stamp .stamp/configure .stamp/config.h.in Makefile.in
 	./config.status --recheck
 
-.stamp/configure: configure.in
+.stamp/configure: .stamp configure.ac
 	autoconf && touch .stamp/configure
 
-.stamp/config.h.in: configure.in acconfig.h
+.stamp/config.h.in: .stamp configure.ac acconfig.h
 	autoheader && touch .stamp/config.h.in
 
 ###############################################################################
