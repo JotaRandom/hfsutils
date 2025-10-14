@@ -38,3 +38,74 @@ hvol
 *.swp
 *.swo
 Session.vim
+
+# Build artifacts and directories
+build/
+*.o
+*.a
+.DS_Store
+.stamp/
+autom4te.cache/
+config.log
+config.status
+configure~
+
+# Main executable
+hfsutil
+
+# Optional symlinks
+hattrib
+hcd
+hcopy
+hdel
+hdir
+hformat
+hls
+hmkdir
+hmount
+hpwd
+hrename
+hrmdir
+humount
+hvol
+
+# Generated files
+libhfs/config.h
+libhfs/config.log
+libhfs/config.status
+libhfs/os.c
+lib/libhfs/config.h
+lib/libhfs/config.log
+lib/libhfs/config.status
+lib/libhfs/os.c
+lib/librsrc/config.h
+lib/librsrc/config.log
+lib/librsrc/config.status
+librsrc/config.h
+librsrc/config.log
+librsrc/config.status
+hfsck/Makefile
+linux/Makefile
+
+# Test data
+test/data/*.hfs
+test/data/*.img
+test/data/reference/
+test/temp/
+test/*.hfs
+test/*.img
+test/retrieved_file.txt
+test/test_file.txt
+test/project.txt
+test/hello.c
+
+# Backup files
+*~
+*.bak
+*.swp
+
+# IDE files
+.vscode/
+.idea/
+*.xcodeproj/
+*.xcworkspace/

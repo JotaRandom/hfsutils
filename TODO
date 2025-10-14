@@ -1,6 +1,8 @@
 
 hfsutils - tools for reading and writing Macintosh HFS volumes
 Copyright (C) 1996-1998 Robert Leslie
+Copyright (C) 2025 BrockG
+Copyright (C) 2025 Pablo Lezaeta
 
 $Id: TODO,v 1.14 1998/11/02 22:08:22 rob Exp $
 
@@ -46,15 +48,6 @@ General to-do items (aka bugs):
   * glob :*:foo correctly
   * glob hcopy destination HFS path?
   * formalize hdisk.pl into the distribution
-
-  xhfs
-
-  * open arbitrary partitions
-  * rename volumes
-  * change file type/creator
-  * more support for other platforms (correct device defaults; df output)
-  * graphical partition map editor?
-  * recursive copy: map illegal directory name chars
 
   copyin/copyout
 
