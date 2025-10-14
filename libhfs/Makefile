@@ -19,37 +19,37 @@
 # $Id: Makefile.in,v 1.11 1998/11/02 22:08:51 rob Exp $
 #
 
-@SET_MAKE@
-src =		@srcdir@
-VPATH =		@srcdir@
+
+src =		.
+
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
-prefix =	@prefix@
-exec_prefix =	@exec_prefix@
+prefix =	/usr/local
+exec_prefix =	${prefix}
 
-MANDEST =	@mandir@
+MANDEST =	${prefix}/share/man
 
-INCDEST =	@includedir@
-LIBDEST =	@libdir@
+INCDEST =	${prefix}/include
+LIBDEST =	${exec_prefix}/lib
 
-INSTALL =	@INSTALL@
-LIBINSTALL =	@INSTALL_DATA@
-SOFTLINK =	@LN_S@
+INSTALL =	/usr/bin/install -c
+LIBINSTALL =	${INSTALL} -m 644
+SOFTLINK =	ln -s
 
 OS =		unix
 
-CC =		@CC@
-INCLUDES =	@CPPFLAGS@
-DEFINES =	@DEFS@
-LIBOBJS =	@LIBOBJS@
-LIBS =		@LIBS@
+CC =		gcc
+INCLUDES =	
+DEFINES =	-DHAVE_CONFIG_H
+LIBOBJS =	
+LIBS =		
 
-COPTS =		@CFLAGS@
-LDOPTS =	@LDFLAGS@
+COPTS =		-g -O2
+LDOPTS =	
 
 AR =		ar rc
-RANLIB =	@RANLIB@
+RANLIB =	ranlib
 
 ### END OF USER CUSTOMIZATION #################################################
 

@@ -1,5 +1,5 @@
 #
-# libhfs - library for reading and writing Macintosh HFS volumes
+# librsrc - library for reading and writing Macintosh resources
 # Copyright (C) 1996-1998 Robert Leslie
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,40 +16,37 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# $Id: Makefile.in,v 1.11 1998/11/02 22:08:51 rob Exp $
+# $Id: Makefile.in,v 1.8 1998/04/12 01:33:26 rob Exp $
 #
 
-@SET_MAKE@
-src =		@srcdir@
-VPATH =		@srcdir@
+
+src =		.
+
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
-prefix =	@prefix@
-exec_prefix =	@exec_prefix@
+prefix =	/usr/local
+exec_prefix =	${prefix}
 
-MANDEST =	@mandir@
+MANDEST =	${prefix}/share/man
 
-INCDEST =	@includedir@
-LIBDEST =	@libdir@
+INCDEST =	${prefix}/include
+LIBDEST =	${exec_prefix}/lib
 
-INSTALL =	@INSTALL@
-LIBINSTALL =	@INSTALL_DATA@
-SOFTLINK =	@LN_S@
+INSTALL =	/usr/bin/install -c
+LIBINSTALL =	${INSTALL} -m 644
 
-OS =		unix
+CC =		gcc
+INCLUDES =	
+DEFINES =	-DHAVE_CONFIG_H
+LIBOBJS =	
+LIBS =		
 
-CC =		@CC@
-INCLUDES =	@CPPFLAGS@
-DEFINES =	@DEFS@
-LIBOBJS =	@LIBOBJS@
-LIBS =		@LIBS@
-
-COPTS =		@CFLAGS@
-LDOPTS =	@LDFLAGS@
+COPTS =		-g -O2
+LDOPTS =	
 
 AR =		ar rc
-RANLIB =	@RANLIB@
+RANLIB =	ranlib
 
 ### END OF USER CUSTOMIZATION #################################################
 
@@ -58,11 +55,10 @@ LDFLAGS =	$(LDOPTS)
 
 ###############################################################################
 
-TARGETS =	$(HFSTARGET)
+TARGETS =	$(RSRCTARGET)
 
-HFSTARGET =	libhfs.a
-HFSOBJS =	os.o data.o block.o low.o medium.o file.o btree.o node.o  \
-			record.o volume.o hfs.o version.o $(LIBOBJS)
+RSRCTARGET =	librsrc.a
+RSRCOBJS =	data.o rsrc.o version.o $(LIBOBJS)
 
 ###############################################################################
 
@@ -72,8 +68,8 @@ check :: all
 	@echo "No self-tests available."
 
 install ::
-	$(LIBINSTALL) libhfs.a "$(LIBDEST)/."
-	$(LIBINSTALL) hfs.h "$(INCDEST)/."
+	$(LIBINSTALL) librsrc.a "$(LIBDEST)/."
+	$(LIBINSTALL) rsrc.h "$(INCDEST)/."
 
 again :: clean all
 
@@ -86,6 +82,7 @@ depend ::
 
 clean ::
 	rm -f $(TARGETS) *.o gmon.* core
+	rm -f main
 
 distclean :: clean
 	rm -f config.status config.cache config.log config.h Makefile
@@ -112,32 +109,19 @@ config.status: .stamp/configure .stamp/config.h.in Makefile.in
 
 ###############################################################################
 
-$(HFSTARGET): $(HFSOBJS)
-	$(AR) $@ $(HFSOBJS)
+$(RSRCTARGET): $(RSRCOBJS)
+	$(AR) $@ $(RSRCOBJS)
 	$(RANLIB) $@
 
-os.c: os/$(OS).c
-	rm -f $@
-	$(SOFTLINK) os/$(OS).c $@
+main.o:
+	$(CC) $(CFLAGS) -I. -I../libhfs -c main.c -o $@
+
+main: librsrc.a main.o
+	$(CC) $(LDFLAGS) -L. -L../libhfs main.o -lhfs -lrsrc -o $@
 
 ### DEPENDENCIES FOLLOW #######################################################
 
-block.o: block.c config.h libhfs.h hfs.h apple.h volume.h block.h os.h
-btree.o: btree.c config.h libhfs.h hfs.h apple.h btree.h data.h file.h \
- block.h node.h
 data.o: data.c config.h data.h
-file.o: file.c config.h libhfs.h hfs.h apple.h file.h btree.h record.h \
- volume.h
-hfs.o: hfs.c config.h libhfs.h hfs.h apple.h data.h block.h medium.h \
- file.h btree.h node.h record.h volume.h
-low.o: low.c config.h libhfs.h hfs.h apple.h low.h data.h block.h \
- file.h
-medium.o: medium.c config.h libhfs.h hfs.h apple.h block.h low.h \
- medium.h
-memcmp.o: memcmp.c config.h
-node.o: node.c config.h libhfs.h hfs.h apple.h node.h data.h btree.h
-os.o: os.c config.h libhfs.h hfs.h apple.h os.h
-record.o: record.c config.h libhfs.h hfs.h apple.h record.h data.h
+main.o: main.c /usr/local/include/hfs.h rsrc.h
+rsrc.o: rsrc.c config.h librsrc.h rsrc.h data.h
 version.o: version.c version.h
-volume.o: volume.c config.h libhfs.h hfs.h apple.h volume.h data.h \
- block.h low.h medium.h file.h btree.h record.h os.h

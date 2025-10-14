@@ -8,8 +8,10 @@ $Id: CHANGES,v 1.14 1998/11/02 22:08:20 rob Exp $
 
 Version
 
+  * Updated Makefile and Configure files to a more modern way to build stuff.
   * Remove TCL and TK and X11 components for better maintainbility and to
     reduce the burder of a "comand line" tool.
+  * Reorder the entire project to acomodte and facilitate maintainability
 
 
 Version 3.2.6

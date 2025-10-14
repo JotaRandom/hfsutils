@@ -95,19 +95,16 @@ maintainer-clean :: distclean
 Makefile: config.status
 	./config.status && touch .stamp/config.h
 
-.stamp:
-	mkdir $@
-
-.stamp/config.h: .stamp config.status
+.stamp/config.h: config.status
 	./config.status && touch .stamp/config.h
 
-config.status: .stamp .stamp/configure .stamp/config.h.in Makefile.in
+config.status: .stamp/configure .stamp/config.h.in Makefile.in
 	./config.status --recheck
 
-.stamp/configure: .stamp configure.ac
+.stamp/configure: configure.in
 	autoconf && touch .stamp/configure
 
-.stamp/config.h.in: .stamp configure.ac acconfig.h
+.stamp/config.h.in: configure.in acconfig.h
 	autoheader && touch .stamp/config.h.in
 
 ###############################################################################
