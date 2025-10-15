@@ -1,5 +1,5 @@
 /* config.h.  Generated from config.h.in by configure.  */
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 /*
  * librsrc - library for reading and writing Macintosh resources
  * Copyright (C) 1996-1998 Robert Leslie
