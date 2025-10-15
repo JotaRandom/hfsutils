@@ -31,21 +31,24 @@ Installation
 Prerequisites
 - A C compiler (e.g., gcc or clang).
 - Standard Unix tools (make, etc.).
-- No extra dependencies, as Tcl/Tk/X11 support is removed.
 
 Quick Build
+```
   git clone https://github.com/JotaRandom/hfsutils.git
   cd hfsutils
   ./build.sh
   sudo make install
+```
 
 Manual Build
+```
   # Build libraries
   cd libhfs && ./configure && make
   cd ../librsrc && ./configure && make
   # Build main utility
   cd .. && make
   sudo make install
+```
 
 Configuration Options
 - --disable-cli: Skip building command-line tools.
@@ -58,24 +61,25 @@ Usage
 The tools are provided as a single `hfsutil` executable with subcommands.
 
 Command Structure
-  hfsutil <command> [options]
+  `hfsutil` <command> [options]
 
 Available Commands
-  hmount   Mount an HFS volume
-  humount  Unmount an HFS volume
-  hls      List files in HFS directory
-  hcd      Change HFS directory
-  hpwd     Show current HFS directory
-  hcopy    Copy files to/from HFS volume
-  hdel     Delete HFS files
-  hmkdir   Create HFS directory
-  hrmdir   Remove HFS directory
-  hrename  Rename HFS files
-  hattrib  Show/modify HFS file attributes
-  hvol     Display HFS volume information
-  hformat  Format HFS volumes
+  `hmount`   Mount an HFS volume
+  `humount`  Unmount an HFS volume
+  `hls`      List files in HFS directory
+  `hcd`      Change HFS directory
+  `hpwd`     Show current HFS directory
+  `hcopy`    Copy files to/from HFS volume
+  `hdel`     Delete HFS files
+  `hmkdir`   Create HFS directory
+  `hrmdir`   Remove HFS directory
+  `hrename`  Rename HFS files
+  `hattrib`  Show/modify HFS file attributes
+  `hvol`     Display HFS volume information
+  `hformat`  Format HFS volumes
 
 Basic Examples
+```
   # Mount an HFS volume
   hfsutil hmount /dev/disk2
 
@@ -91,8 +95,10 @@ Basic Examples
   # Format a new HFS volume
   dd if=/dev/zero of=disk.hfs bs=1024 count=1440
   hfsutil hformat -l "My Disk" disk.hfs
+```
 
 Working with Disk Images
+```
   # Mount a disk image
   hfsutil hmount disk_image.img myimage
 
@@ -102,24 +108,31 @@ Working with Disk Images
 
   # Unmount
   hfsutil humount
+```
 
 Creating Symlinks (Optional)
   To use traditional command names (e.g., hcopy, hls):
+```  
   make symlinks
+```
 
 Troubleshooting
 ---------------
 
 Build Issues
   For errors like "config.status: No such file or directory":
+```
   make clean
   cd libhfs && make clean
   cd ../librsrc && make clean
   cd .. && ./build.sh
+```
 
 Permission Errors
   For installation issues:
+```
   sudo make install
+```
 
 Security Notes
 - Do not install as setuid root; it’s unnecessary and risky.
