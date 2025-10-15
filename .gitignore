@@ -9,6 +9,16 @@ config.log
 config.status
 configure~
 
+# Add the stamps
+!hfsck/.stamp
+!libhfs/.stamp
+!librsrc/.stamp
+
+# But not they content
+hfsck/.stamp/*
+libhfs/.stamp/*
+librsrc/.stamp/*
+
 # Main executable
 hfsutil
 
