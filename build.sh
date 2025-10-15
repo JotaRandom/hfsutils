@@ -11,6 +11,7 @@ mkdir -p build/obj
 # Create .stamp if it doesn't exit too
 mkdir -p libhfs/.stamp
 mkdir -p librsrc/.stamp
+mkdir -p hfsck/.stamp
 
 # Build libhfs
 echo "Building libhfs..."
@@ -26,7 +27,7 @@ fi
 make || { echo "Failed to build libhfs"; exit 1; }
 cd ..
 
-# Build librsrc  
+# Build librsrc
 echo "Building librsrc..."
 cd librsrc
 if [ ! -f configure ]; then
