@@ -115,7 +115,6 @@ When adding new tests:
 
 ## Requirements
 
-- Apple Silicon Mac (M1/M2/M3)
 - Bash 3.2+
 - Standard Unix utilities (dd, grep, etc.)
 - Compiled HFS utilities in parent directory
