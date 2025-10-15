@@ -8,6 +8,10 @@ echo "Building HFSUtils..."
 # Create build directory if it doesn't exist
 mkdir -p build/obj
 
+# Create .stamp if it doesn't exit too
+mkdir -p libhfs/.stamp
+mkdir -p librsrc/.stamp
+
 # Build libhfs
 echo "Building libhfs..."
 cd libhfs
