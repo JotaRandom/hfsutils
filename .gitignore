@@ -1,3 +1,6 @@
+# But do not ignore this .gitignore file itself
+!.gitignore
+
 # Build artifacts and directories
 build/
 *.o
@@ -10,14 +13,10 @@ config.status
 configure~
 
 # Add the stamps
-!hfsck/.stamp
-!libhfs/.stamp
-!librsrc/.stamp
+!*/.stamp/
 
 # But not they content
-hfsck/.stamp/*
-libhfs/.stamp/*
-librsrc/.stamp/*
+*/.stamp/*
 
 # Main executable
 hfsutil
