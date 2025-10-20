@@ -14,7 +14,7 @@ OBJDIR = $(BUILDDIR)/obj
 $(shell mkdir -p $(OBJDIR))
 
 # Executables (symlinks to hfsutil)
-EXECUTABLES = hattrib hcd hcopy hdel hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
+EXECUTABLES = hattrib hcd hcopy hdel hfsck hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
 
 # Default target - just build hfsutil without symlinks
 all: libhfs librsrc hfsck hfsutil

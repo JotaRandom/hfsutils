@@ -41,12 +41,22 @@ fi
 make || { echo "Failed to build librsrc"; exit 1; }
 cd ..
 
+# Build hfsck
+echo "Building hfsck..."
+cd hfsck
+if [ ! -f configure ]; then
+    echo "Error: hfsck/configure not found!"
+    exit 1
+fi
+if [ ! -f config.status ]; then
+    echo "Configuring hfsck..."
+    ./configure
+fi
+cd ..
+
+
 # Build main utilities
 echo "Building hfsutil..."
-# Build hfsck (optional component)
-echo "Building hfsck..."
-make -C hfsck || { echo "Failed to build hfsck"; exit 1; }
-
 make || { echo "Failed to build hfsutil"; exit 1; }
 
 if [ -f hfsutil ]; then
