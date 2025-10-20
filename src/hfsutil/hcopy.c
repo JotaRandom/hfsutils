@@ -85,7 +85,7 @@ int do_copyin(hfsvol *vol, int argc, char *argv[], const char *dest, int mode)
 {
   hfsdirent ent;
   struct stat sbuf;
-  cpifunc copyfile;
+  cpifunc copyfile = cpi_raw;
   int i, result = 0;
 
   if (argc > 1 && (hfs_stat(vol, dest, &ent) == -1 ||
@@ -174,7 +174,7 @@ int do_copyout(hfsvol *vol, int argc, char *argv[], const char *dest, int mode)
 {
   struct stat sbuf;
   hfsdirent ent;
-  cpofunc copyfile;
+  cpofunc copyfile = cpo_macb;
   int i, result = 0;
 
   if (argc > 1 && (stat(dest, &sbuf) == -1 ||

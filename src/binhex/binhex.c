@@ -467,7 +467,7 @@ int hqxchar(void)
 static
 int nextchar(void)
 {
-  int c, c2, ch;
+  int c, c2, ch = 0;
 
   c = hqxchar();
   if (c == -1)

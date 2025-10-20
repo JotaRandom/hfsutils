@@ -51,7 +51,7 @@ char *mctime(unsigned long secs)
  */
 char *extstr(ExtDescriptor *ext)
 {
-  static char str[20];
+  static char str[32];
 
   switch (ext->xdrNumABlks)
     {
@@ -59,12 +59,12 @@ char *extstr(ExtDescriptor *ext)
       return "[]";
 
     case 1:
-      sprintf(str, "1[%u]", ext->xdrStABN);
+      snprintf(str, sizeof(str), "1[%u]", ext->xdrStABN);
       break;
 
     default:
-      sprintf(str, "%u[%u..%u]", ext->xdrNumABlks,
-	      ext->xdrStABN, ext->xdrStABN + ext->xdrNumABlks - 1);
+      snprintf(str, sizeof(str), "%u[%u..%u]", ext->xdrNumABlks,
+               ext->xdrStABN, ext->xdrStABN + ext->xdrNumABlks - 1);
     }
 
   return str;
@@ -80,15 +80,31 @@ char *extrecstr(ExtDataRec *rec)
   ExtDescriptor *ext;
   int i;
 
-  str[0] = 0;
+  str[0] = '\0';
+  {
+    char *p = str;
+    size_t rem = sizeof(str);
 
-  for (i = 0, ext = &(*rec)[0]; i < 3; ++i, ++ext)
-    {
-      if (i > 0)
-	strcat(str, "+");
+    for (i = 0, ext = &(*rec)[0]; i < 3; ++i, ++ext)
+      {
+        int written = 0;
 
-      strcat(str, extstr(ext));
-    }
+        if (i > 0 && rem > 0)
+          {
+            written = snprintf(p, rem, "+");
+            if (written < 0) written = 0;
+            if ((size_t)written < rem) { p += written; rem -= written; } else { rem = 0; }
+          }
+
+        if (rem > 0)
+          {
+            const char *s = extstr(ext);
+            written = snprintf(p, rem, "%s", s);
+            if (written < 0) written = 0;
+            if ((size_t)written < rem) { p += written; rem -= written; } else { rem = 0; }
+          }
+      }
+  }
 
   return str;
 }
@@ -144,14 +160,18 @@ int ask(char *question, ...)
 	  printf(". Fix? ");
 	  fflush(stdout);
 
-	  fgets(answer, sizeof(answer), stdin);
-
-	  if (feof(stdin))
-	    {
-	      printf("\n");
-	      result = 0;
-	      break;
-	    }
+      if (fgets(answer, sizeof(answer), stdin) == NULL)
+        {
+          if (feof(stdin))
+            {
+              printf("\n");
+              result = 0;
+              break;
+            }
+          /* On error, treat as no */
+          result = 0;
+          break;
+        }
 
 	  switch (answer[0])
 	    {

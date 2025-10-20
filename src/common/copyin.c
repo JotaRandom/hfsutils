@@ -379,7 +379,7 @@ hfsfile *opendst(hfsvol *vol, const char *dstname, const char *hint,
 {
   hfsdirent ent;
   hfsfile *file;
-  unsigned long cwd;
+  unsigned long cwd = 0;
 
   if (hfs_stat(vol, dstname, &ent) != -1 &&
       (ent.flags & HFS_ISDIR))

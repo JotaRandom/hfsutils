@@ -17,7 +17,7 @@ $(shell mkdir -p $(OBJDIR))
 EXECUTABLES = hattrib hcd hcopy hdel hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
 
 # Default target - just build hfsutil without symlinks
-all: libhfs librsrc hfsutil
+all: libhfs librsrc hfsck hfsutil
 
 # Target to create symlinks for backward compatibility
 symlinks: hfsutil $(EXECUTABLES) hdir
@@ -28,6 +28,9 @@ libhfs:
 
 librsrc:
 	$(MAKE) -C librsrc
+
+hfsck:
+	$(MAKE) -C hfsck
 
 # Object files in build directory
 $(OBJDIR)/hcwd.o: src/common/hcwd.c
@@ -123,7 +126,7 @@ UTIL_OBJS = $(OBJDIR)/hattrib.o $(OBJDIR)/hcd.o $(OBJDIR)/hcopy.o \
             $(OBJDIR)/dlist.o $(OBJDIR)/dstring.o
 
 # Build unified binary
-hfsutil: $(UTIL_OBJS) $(COMMON_OBJS)
+hfsutil: libhfs librsrc $(UTIL_OBJS) $(COMMON_OBJS)
 	$(CC) $(LDFLAGS) $(UTIL_OBJS) $(COMMON_OBJS) $(LIBS) -o $@
 
 # Create symlinks for individual commands

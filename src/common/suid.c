@@ -60,8 +60,14 @@ void suid_enable(void)
 
 # else
 
-  setuid(euid);
-  setgid(egid);
+  if (setuid(euid) == -1)
+    {
+      /* ignore error intentionally */
+    }
+  if (setgid(egid) == -1)
+    {
+      /* ignore error intentionally */
+    }
 
 # endif
 }
@@ -79,8 +85,14 @@ void suid_disable(void)
 
 # else
 
-  setuid(uid);
-  setgid(gid);
+  if (setuid(uid) == -1)
+    {
+      /* ignore error intentionally */
+    }
+  if (setgid(gid) == -1)
+    {
+      /* ignore error intentionally */
+    }
 
 # endif
 }

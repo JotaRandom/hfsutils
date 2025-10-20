@@ -43,6 +43,10 @@ cd ..
 
 # Build main utilities
 echo "Building hfsutil..."
+# Build hfsck (optional component)
+echo "Building hfsck..."
+make -C hfsck || { echo "Failed to build hfsck"; exit 1; }
+
 make || { echo "Failed to build hfsutil"; exit 1; }
 
 if [ -f hfsutil ]; then
