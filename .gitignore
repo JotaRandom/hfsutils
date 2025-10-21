@@ -61,7 +61,7 @@ hfsck/config.log
 hfsck/config.status
 linux/Makefile
 
-# Test data
+# Test data and temporary files
 test/data/*.hfs
 test/data/*.img
 test/data/reference/
@@ -72,6 +72,14 @@ test/retrieved_file.txt
 test/test_file.txt
 test/project.txt
 test/hello.c
+
+# Test artifacts
+*.log
+commit_message*.txt
+fsck.hfs+
+mkfs.hfs
+mkfs.hfs+
+mkfs.hfsplus
 
 # Backup files
 *~

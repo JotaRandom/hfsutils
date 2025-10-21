@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build System Portability**: Resolved issues with modern compilers and systems
 - **Include Path Issues**: Fixed header file location problems
 - **Symlink Creation**: Proper symbolic link creation for traditional command names
+- **HFS Date Validation**: Added proper handling for dates beyond HFS limit
+- **Filesystem Detection**: Robust detection of HFS, HFS+, and HFSX filesystems
+- **Compiler Warnings**: Fixed unused variable and return value warnings
+- **Test Suite Organization**: Moved test scripts to test/ directory for better organization
+- **Build Script Validation**: Enhanced build.sh with proper variable handling and validation
 
 ## [3.2.6] - 1998-11-02
 
