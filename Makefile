@@ -137,11 +137,19 @@ hdir: hfsutil
 	ln -sf hfsutil hdir
 
 clean:
-	rm -f $(EXECUTABLES) hdir hfsutil
-	rm -rf $(BUILDDIR)
-	$(MAKE) -C libhfs clean
-	$(MAKE) -C librsrc clean
-	$(MAKE) -C hfsck clean
+	@echo "Cleaning executables and build artifacts..."
+	@for f in $(EXECUTABLES) hdir hfsutil; do \
+		if [ -L $$f ] || [ -f $$f ]; then \
+			rm -f $$f; \
+			echo " - removed $$f"; \
+		else \
+			echo " - skipping $$f (not a file or symlink)"; \
+		fi; \
+	done
+	@rm -rf $(BUILDDIR)
+	@$(MAKE) -C libhfs clean
+	@$(MAKE) -C librsrc clean
+	@$(MAKE) -C hfsck clean
 
 distclean: clean
 	rm -f config.h config.log config.status Makefile
