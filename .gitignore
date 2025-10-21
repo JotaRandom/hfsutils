@@ -20,6 +20,7 @@ configure~
 
 # Main executable
 hfsutil
+hfsck/hfsck
 
 # Optional symlinks
 hattrib
