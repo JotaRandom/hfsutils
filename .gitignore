@@ -29,6 +29,7 @@ hcopy
 hdel
 hdir
 hformat
+hfsck
 hls
 hmkdir
 hmount
