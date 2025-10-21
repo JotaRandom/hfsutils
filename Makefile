@@ -73,6 +73,9 @@ $(OBJDIR)/charset.o: src/common/charset.c
 $(OBJDIR)/hfs_detect.o: src/common/hfs_detect.c
 	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
+$(OBJDIR)/hfsplus_format.o: src/common/hfsplus_format.c
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
+
 $(OBJDIR)/binhex.o: src/binhex/binhex.c
 	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
@@ -140,7 +143,7 @@ $(OBJDIR)/hfsutil.o: src/hfsutil/hfsutil.c
 # Common objects
 COMMON_OBJS = $(OBJDIR)/hcwd.o $(OBJDIR)/suid.o $(OBJDIR)/glob.o \
               $(OBJDIR)/version.o $(OBJDIR)/charset.o $(OBJDIR)/binhex.o \
-              $(OBJDIR)/hfs_detect.o
+              $(OBJDIR)/hfs_detect.o $(OBJDIR)/hfsplus_format.o
 
 # All utility objects  
 UTIL_OBJS = $(OBJDIR)/hattrib.o $(OBJDIR)/hcd.o $(OBJDIR)/hcopy.o \

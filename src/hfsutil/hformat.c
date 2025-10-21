@@ -35,6 +35,7 @@
 # include "suid.h"
 # include "hformat.h"
 # include "hfs_detect.h"
+# include "hfsplus_format.h"
 
 # define O_FORCE	0x01
 
@@ -74,6 +75,34 @@ hfsvol *do_format(const char *path, int partno, int mode, const char *vname)
   suid_disable();
 
   return vol;
+}
+
+/*
+ * NAME:	do_hfsplus_format()
+ * DESCRIPTION:	format volume as HFS+ with necessary privileges
+ */
+static
+int do_hfsplus_format(const char *path, const char *vname, int force, int verbose)
+{
+  hfsplus_format_opts_t opts;
+  int result;
+
+  /* Initialize format options */
+  memset(&opts, 0, sizeof(opts));
+  opts.device_path = (char *)path;
+  opts.volume_name = (char *)vname;
+  opts.block_size = 0;  /* Auto-detect optimal size */
+  opts.total_size = 0;  /* Use full device */
+  opts.force = force;
+  opts.journal = 0;     /* No journaling initially */
+  opts.case_sensitive = 0;  /* Case-insensitive HFS+ */
+  opts.verbose = verbose;
+
+  suid_enable();
+  result = hfsplus_format_volume(&opts);
+  suid_disable();
+
+  return result;
 }
 
 /*
@@ -192,36 +221,45 @@ int hformat_main(int argc, char *argv[])
 	partno = 1;
     }
 
-  /* Display formatting information */
+  /* Handle HFS+ formatting */
   if (force_fs_type == 2) {
     printf("Formatting %s as HFS+ volume '%s'...\n", path, vname);
-    /* TODO: Implement HFS+ formatting */
-    fprintf(stderr, "%s: HFS+ formatting not yet implemented\n", argv0);
-    goto fail;
-  } else {
-    printf("Formatting %s as HFS volume '%s'...\n", path, vname);
-  }
-
-  vol = do_format(path, partno, 0, vname);
-  if (vol == 0)
-    {
-      hfsutil_perror(path);
+    
+    if (do_hfsplus_format(path, vname, (options & O_FORCE), 1) < 0) {
+      fprintf(stderr, "%s: HFS+ formatting failed\n", argv0);
       goto fail;
     }
+    
+    printf("HFS+ volume '%s' created successfully\n", vname);
+    printf("Filesystem type: HFS+\n");
+    
+    /* Note: HFS+ volumes cannot be mounted with the old HFS library */
+    printf("Note: Use system tools to mount and verify the HFS+ volume\n");
+    
+  } else {
+    /* Handle HFS formatting */
+    printf("Formatting %s as HFS volume '%s'...\n", path, vname);
+    
+    vol = do_format(path, partno, 0, vname);
+    if (vol == 0)
+      {
+        hfsutil_perror(path);
+        goto fail;
+      }
 
-  hfs_vstat(vol, &ent);
-  hfsutil_pinfo(&ent);
-  
-  /* Display filesystem type information */
-  printf("Filesystem type: %s\n", (force_fs_type == 2) ? "HFS+" : "HFS");
+    hfs_vstat(vol, &ent);
+    hfsutil_pinfo(&ent);
+    
+    printf("Filesystem type: HFS\n");
 
-  if (hcwd_mounted(ent.name, ent.crdate, path, partno) == -1)
-    {
-      perror("Failed to record mount");
-      result = 1;
-    }
+    if (hcwd_mounted(ent.name, ent.crdate, path, partno) == -1)
+      {
+        perror("Failed to record mount");
+        result = 1;
+      }
 
-  hfsutil_unmount(vol, &result);
+    hfsutil_unmount(vol, &result);
+  }
 
   free(path);
 

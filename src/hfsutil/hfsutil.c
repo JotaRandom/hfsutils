@@ -83,6 +83,9 @@ int main(int argc, char *argv[])
     { "hrmdir",  hrmdir_main  },
     { "humount", humount_main },
     { "hvol",    hvol_main    },
+    { "mkfs.hfs", hformat_main },
+    { "mkfs.hfs+", hformat_main },
+    { "mkfs.hfsplus", hformat_main },
     { 0,         0            }
   };
 

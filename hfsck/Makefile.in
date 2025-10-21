@@ -66,7 +66,7 @@ TARGETS =	$(HFSCHECK)
 
 HFSCHECK =	hfsck
 HFSCKSRCS =	ck_btree.c ck_mdb.c ck_volume.c hfsck.c main.c util.c
-HFSCKOBJS =	$(HFSCKSRCS:.c=.o) suid.o version.o
+HFSCKOBJS =	$(HFSCKSRCS:.c=.o) suid.o version.o hfs_detect.o
 
 ###############################################################################
 
@@ -127,6 +127,9 @@ suid.o:
 
 version.o:
 	$(CC) $(ALL_CFLAGS) -c ../src/common/version.c -o version.o
+
+hfs_detect.o:
+	$(CC) $(ALL_CFLAGS) -c ../src/common/hfs_detect.c -o hfs_detect.o
 
 hfs_detect.o:
 	$(CC) $(ALL_CFLAGS) -c ../src/common/hfs_detect.c -o hfs_detect.o
