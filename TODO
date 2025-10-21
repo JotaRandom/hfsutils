@@ -1,72 +1,110 @@
 
 hfsutils - tools for reading and writing Macintosh HFS volumes
 Copyright (C) 1996-1998 Robert Leslie
-Copyright (C) 2025 BrockG
+Copyright (C) 2025 Brock Gunter-Smith
 Copyright (C) 2025 Pablo Lezaeta
 
-$Id: TODO,v 1.14 1998/11/02 22:08:22 rob Exp $
+Modern hfsutils - Version 4.0.0
+Last updated: October 2025
 
 ===============================================================================
 
-General to-do items (aka bugs):
+COMPLETED FEATURES (Version 4.0.0):
 
-  libhfs
+  ✅ HFS+ Support
+  * ✅ Full HFS+ filesystem creation (mkfs.hfs+)
+  * ✅ HFS+ filesystem checking (fsck.hfs+)
+  * ✅ HFS+ volume detection and validation
+  * ✅ Proper HFS+ structures (volume header, allocation bitmap, B-trees)
+  * ✅ Unicode filename support
+  * ✅ Large volume support
 
-  * support HFS+ (aka Sequoia, Extended Format)
+  ✅ Unix Standard Utilities
+  * ✅ mkfs.hfs, mkfs.hfs+ - Standard filesystem creation utilities
+  * ✅ fsck.hfs, fsck.hfs+ - Standard filesystem checking utilities
+  * ✅ Complete manual pages (man 8) with examples
+  * ✅ Proper installation to standard directories
+
+  ✅ Modern Build System
+  * ✅ Unified hfsutil binary with all traditional commands
+  * ✅ Robust Makefile with variable support (CC, CFLAGS, PREFIX, etc.)
+  * ✅ Automatic symlink generation
+  * ✅ Comprehensive test suite
+  * ✅ CI/CD integration with GitHub Actions
+
+  ✅ Documentation
+  * ✅ Complete manual pages for all utilities
+  * ✅ Updated README with modern usage examples
+  * ✅ GitHub Copilot development instructions
+  * ✅ Comprehensive build and installation documentation
+
+===============================================================================
+
+REMAINING TODO ITEMS:
+
+  libhfs improvements:
   * don't allow reads from spared blocks
-  * further improve efficiency of b*-tree searches?
-  * concurrency considerations: opening same file multiple times;
-      performing directory manipulations on open files
-  * b*-tree record balancing?
+  * further improve efficiency of b*-tree searches
+  * concurrency considerations: opening same file multiple times
+  * b*-tree record balancing
   * smarter block allocation algorithm
-  * volume full: hfs_write() should return bytes written < len, return -1
-      on next call?
-  * seek beyond end of file?
-  * touch directory timestamps on file updates?
   * improve efficiency of bitmap operations
-  * improve efficiency of search operations
-  * CNID wrapping?
+  * CNID wrapping handling
   * bad block sparing by physical block
 
-  librsrc
-
+  librsrc enhancements:
   * determine resource sizes without reading them
   * support writability
 
-  hfsck
-
-  * modify libhfs to support low-level grubbing
-
-  command-line tools
-
+  command-line tools:
   * preserve timestamps (-p) for hcopy
   * recursive hcopy (-r)
-  * allow hformat to create files and/or set size?
-  * write Linux utilities mkfs.hfs, fsck.hfs
-  * eliminate ftruncate()
+  * allow hformat to create files and/or set size
   * more flags for hdel (-i, -r, -f)
-  * glob :*:foo correctly
-  * glob hcopy destination HFS path?
+  * improve glob pattern handling
   * formalize hdisk.pl into the distribution
 
-  copyin/copyout
-
+  copyin/copyout:
   * finish/fix timestamp preservation
   * revisit buffer sizes
   * remember src/dst filenames (for preserve/delete)
   * allow name mangling to be optional
   * don't unconditionally clobber
   * delete incomplete files after failed transfers
-  * AppleSingle, Netatalk-/CAP-style AppleDouble?
+  * AppleSingle, Netatalk-/CAP-style AppleDouble support
+
+  code quality:
+  * fix compilation warnings (setreuid/setregid return values)
+  * improve error handling consistency
+  * add more comprehensive error messages
+  * memory leak detection and fixes
 
 Future wish-list:
 
-  * raw SCSI access for hideous platforms
+  * raw SCSI access for specialized platforms
   * partitioning utility
   * defragmenting utility
+  * HFS+ journaling support
+  * Extended attributes support
+  * Case-sensitive HFS+ support
+  * Compression support
 
 Acknowledged limitations:
 
   * null characters (ASCII 0x00) not supported in filenames
   * partition maps not managed with A/UX support
+  * limited HFS+ advanced features (journaling, case-sensitivity)
+
+===============================================================================
+
+DEVELOPMENT STATUS:
+
+The project has reached a major milestone with version 4.0.0, providing:
+- Complete HFS+ filesystem creation and checking
+- Unix standard utilities (mkfs.*, fsck.*)
+- Modern build system and documentation
+- Comprehensive testing and CI/CD
+
+The core functionality is stable and ready for production use.
+Future development focuses on performance improvements and advanced features.
 

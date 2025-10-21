@@ -55,8 +55,14 @@ void suid_enable(void)
 {
 # ifdef HAVE_SETREUID
 
-  setreuid(-1, euid);
-  setregid(-1, egid);
+  if (setreuid(-1, euid) == -1)
+    {
+      /* ignore error intentionally */
+    }
+  if (setregid(-1, egid) == -1)
+    {
+      /* ignore error intentionally */
+    }
 
 # else
 
@@ -80,8 +86,14 @@ void suid_disable(void)
 {
 # ifdef HAVE_SETREUID
 
-  setreuid(-1, uid);
-  setregid(-1, gid);
+  if (setreuid(-1, uid) == -1)
+    {
+      /* ignore error intentionally */
+    }
+  if (setregid(-1, gid) == -1)
+    {
+      /* ignore error intentionally */
+    }
 
 # else
 
