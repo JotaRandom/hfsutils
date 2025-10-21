@@ -46,6 +46,7 @@ Ayuda a implementar y mantener las utilidades HFS (hfsutils). El repo genera un 
 - `Makefile` — reglas de build y symlink
 - `src/hfsutil/*.c` — implementaciones de subcomandos
 - `libhfs/`, `librsrc/` — librerías de bajo nivel
+- `hfsck/` — herramientas de verificación de HFS
 - `test/` — scripts de pruebas y generación de datos
 
 Si algo falta o deseas que el archivo incluya ejemplos más específicos (por ejemplo, fragmentos de `hfsutil.c` o cómo ejecutar pruebas en Windows vs WSL), dímelo y lo itero.
