@@ -5,13 +5,39 @@
 *.sh text eol=lf
 */configure text eol=lf
 configure text eol=lf
-*/Makefile text eol=le
+*/Makefile text eol=lf
 Makefile text eol=lf
+*/Makefile.in text eol=lf
+Makefile.in text eol=lf
 build.sh text eol=lf
+
+# Configuration files
+*.ac text eol=lf
+*.in text eol=lf
+configure.ac text eol=lf
+config.h.in text eol=lf
 
 # Docs and markdown
 *.md text eol=lf
+*.txt text eol=lf
+*.1 text eol=lf
+*.8 text eol=lf
+doc/man/* text eol=lf
 
 # C/C++ sources and headers
 *.c text eol=lf
 *.h text eol=lf
+
+# Test files
+test/*.sh text eol=lf
+test/*.c text eol=lf
+
+# Other text files
+TODO text eol=lf
+CHANGELOG text eol=lf
+CHANGELOG.md text eol=lf
+README text eol=lf
+README.md text eol=lf
+COPYRIGHT text eol=lf
+CREDITS text eol=lf
+INSTALL text eol=lf

@@ -56,7 +56,7 @@ fi
 make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || { echo "Failed to build librsrc"; exit 1; }
 cd ..
 
-# Build hfsck
+# Build hfsck with journaling support
 echo "Building hfsck..."
 cd hfsck
 if [ ! -f configure ]; then
@@ -67,6 +67,25 @@ if [ ! -f config.status ]; then
     echo "Configuring hfsck..."
     CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
 fi
+
+# Compile hfsck with journaling support manually if autotools fails
+if ! make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" 2>/dev/null; then
+    echo "Autotools build failed, building hfsck manually with journaling support..."
+    
+    # Compile all source files
+    $CC $CFLAGS -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c *.c || { echo "Failed to compile hfsck sources"; exit 1; }
+    
+    # Compile common sources
+    $CC $CFLAGS -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/suid.c -o suid.o || { echo "Failed to compile suid.c"; exit 1; }
+    $CC $CFLAGS -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/version.c -o version.o || { echo "Failed to compile version.c"; exit 1; }
+    $CC $CFLAGS -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/hfs_detect.c -o hfs_detect.o || { echo "Failed to compile hfs_detect.c"; exit 1; }
+    
+    # Link hfsck with journaling support
+    $CC $CFLAGS -o hfsck ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o ./../libhfs/libhfs.a || { echo "Failed to link hfsck"; exit 1; }
+    
+    echo "hfsck built successfully with journaling support"
+fi
+
 cd ..
 
 

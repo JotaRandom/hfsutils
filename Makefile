@@ -52,7 +52,15 @@ librsrc:
 	$(MAKE) -C librsrc CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 
 hfsck:
-	$(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
+	@if ! $(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
+		echo "Autotools build failed, building hfsck manually with journaling support..."; \
+		cd hfsck && \
+		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c *.c && \
+		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/suid.c -o suid.o && \
+		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/version.c -o version.o && \
+		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/hfs_detect.c -o hfs_detect.o && \
+		$(CC) $(CFLAGS) -o hfsck ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o ./../libhfs/libhfs.a; \
+	fi
 
 # Object files in build directory
 $(OBJDIR)/hcwd.o: src/common/hcwd.c

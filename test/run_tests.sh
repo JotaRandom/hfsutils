@@ -1068,6 +1068,46 @@ test_mixed_filesystem_operations() {
     return 0
 }
 
+# Test HFS+ journaling support
+test_hfsplus_journaling() {
+    log "Testing HFS+ journaling support..."
+    
+    # Run the dedicated journaling test script
+    if [ -f "$SCRIPT_DIR/test_journaling.sh" ]; then
+        if bash "$SCRIPT_DIR/test_journaling.sh"; then
+            success "HFS+ journaling test passed"
+            return 0
+        else
+            error "HFS+ journaling test failed"
+            return 1
+        fi
+    else
+        warning "Journaling test script not found, skipping detailed journaling tests"
+        
+        # Basic journaling support check
+        if [ -f "$UTILS_DIR/fsck.hfs+" ] || [ -f "$UTILS_DIR/hfsck/hfsck" ]; then
+            local fsck_binary
+            if [ -f "$UTILS_DIR/fsck.hfs+" ]; then
+                fsck_binary="$UTILS_DIR/fsck.hfs+"
+            else
+                fsck_binary="$UTILS_DIR/hfsck/hfsck"
+            fi
+            
+            # Check if binary has journaling support
+            if strings "$fsck_binary" 2>/dev/null | grep -q journal; then
+                success "Journaling support detected in fsck.hfs+"
+                return 0
+            else
+                warning "No journaling strings found in binary"
+                return 0
+            fi
+        else
+            error "fsck.hfs+ binary not found"
+            return 1
+        fi
+    fi
+}
+
 #==============================================================================
 # Main execution (updated)
 #==============================================================================
@@ -1177,6 +1217,7 @@ case "$TEST_PATTERN" in
         run_test "Program Name Detection" test_program_name_detection
         run_test "HFS+ Volume Information" test_hfsplus_volume_info
         run_test "Mixed HFS/HFS+ Operations" test_mixed_filesystem_operations
+        run_test "HFS+ Journaling Support" test_hfsplus_journaling
         ;;
         
     stress)

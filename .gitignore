@@ -85,6 +85,14 @@ mkfs.hfs
 mkfs.hfs+
 mkfs.hfsplus
 
+# Journal and logging files
+hfsutils.log
+*.log
+
+# Additional build artifacts
+hfsck/*.o
+hfsck/hfsck
+
 # Backup files
 *~
 *.bak

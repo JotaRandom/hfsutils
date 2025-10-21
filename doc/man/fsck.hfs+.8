@@ -11,10 +11,11 @@ fsck.hfs+ \- check and repair an HFS+ filesystem
 .B fsck.hfs+
 checks an HFS+ (Hierarchical File System Plus) filesystem and optionally
 repairs any errors found. This is the standard Unix filesystem checking
-utility for HFS+ filesystems.
+utility for HFS+ filesystems with full journaling support.
 .PP
 HFS+ is the extended version of HFS with support for larger volumes, longer
-filenames, Unicode support, and improved metadata handling.
+filenames, Unicode support, improved metadata handling, and optional journaling
+for crash recovery.
 .PP
 The
 .I device
@@ -25,6 +26,13 @@ If the filesystem is mounted, only a read-only check will be performed unless
 the
 .B -f
 option is used to force checking.
+.PP
+.B JOURNALING SUPPORT
+.PP
+This implementation includes full HFS+ journaling support. If the filesystem
+has journaling enabled, the journal will be automatically replayed before
+filesystem validation to ensure crash recovery. Corrupted journals are
+automatically detected and can be disabled during repair operations.
 .SH OPTIONS
 .TP
 .B -f
@@ -86,9 +94,24 @@ HFS+ filesystems support advanced features like journaling, case-sensitivity,
 and extended attributes. The checker validates these structures in addition
 to basic filesystem integrity.
 .PP
+.B JOURNALING FEATURES:
+.IP \(bu 4
+Automatic journal replay for crash recovery
+.IP \(bu 4
+Journal validation and corruption detection
+.IP \(bu 4
+Automatic journal disabling for corrupted journals
+.IP \(bu 4
+Support for both journaled and non-journaled HFS+ volumes
+.IP \(bu 4
+Comprehensive logging to hfsutils.log
+.PP
 It is recommended to unmount the filesystem before running
 .B fsck.hfs+
 to ensure data integrity during the check and repair process.
+.PP
+Journal operations are logged to hfsutils.log for troubleshooting and
+audit purposes.
 .SH SEE ALSO
 fsck(8), fsck.hfs(8), mkfs.hfs+(8), hfsutils(1)
 .SH AUTHOR
