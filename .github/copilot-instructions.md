@@ -1,52 +1,137 @@
-## Objetivo rápido
-Ayuda a implementar y mantener las utilidades HFS (hfsutils). El repo genera un único binario `hfsutil` que actúa como envoltorio para subcomandos (hls, hcopy, hmount, ...). Prioriza cambios en `src/` y en las carpetas de librerías `libhfs/` y `librsrc/`.
+# GitHub Copilot Instructions for hfsutils
 
-## Entradas / Salidas y contrato mínimo
-- Input: código C en `src/`, `libhfs/`, `librsrc/`.
-- Output: ejecutable `hfsutil` (root del repo) y opcionalmente symlinks tradicionales.
-- Error modes: fallos frecuentes en configure/make; usar `./build.sh` y `make clean` para reproducir.
+## Project Overview
+hfsutils is a modern collection of tools for manipulating Hierarchical File System (HFS and HFS+) volumes. This is a modernized version of the original hfsutils by Robert Leslie, with additional HFS+ support and Unix standard filesystem utilities.
 
-## Estructura clave (qué editar y dónde)
-- Binarios y symlinks: `Makefile` en la raíz compila `hfsutil` y crea symlinks en `EXECUTABLES`.
-- Bibliotecas: `libhfs/` y `librsrc/` contienen su propio `Makefile` y `configure` — muchos cambios de API requieren recompilar esas carpetas primero.
-- Código de utilidades: `src/hfsutil/*.c` implementa cada subcomando (ej. `hcopy.c`, `hls.c`, `hmount.c`). Cambios en la interfaz de subcomando deben reflejarse en `hfsutil.c`.
+## Key Components
 
-## Flujo de desarrollo y comandos útiles
-- IMPORTANTE: Antes de ejecutar cualquier `make`, ejecutar `make clean` en la raíz y en las subcarpetas relevantes (`libhfs/`, `librsrc/`, `hfsck/`) para asegurarse de un build reproducible.
+### Core Binaries
+- `hfsutil` - Main unified binary containing all HFS utilities
+- `hfsck/hfsck` - HFS/HFS+ filesystem checker
 
-- Build rápido (usa los scripts del repo):
-  - `./build.sh` — script cómodo que ejecuta `./configure` y `make` en `libhfs/` y `librsrc/`, luego `make` en la raíz. Nota: el script asume que ha ejecutado `make clean` previamente si desea un build desde cero.
-  - `make` — compila `hfsutil` (requiere que `libhfs` y `librsrc` ya estén configuradas/compiladas). Recomendado: `make clean; make`.
-  - `make symlinks` o `make install-symlinks` — crea los nombres tradicionales (por ejemplo `hcopy`) apuntando a `hfsutil`.
-  - `make test` — ejecuta `test/generate_test_data.sh` y `test/run_tests.sh`. Recomendado: `make clean; ./build.sh; make symlinks; make test`.
+### Filesystem Utilities (Unix Standard)
+- `mkfs.hfs` - Create HFS filesystems
+- `mkfs.hfs+` - Create HFS+ filesystems  
+- `mkfs.hfsplus` - Alias for mkfs.hfs+
+- `fsck.hfs` - Check/repair HFS filesystems
+- `fsck.hfs+` - Check/repair HFS+ filesystems
+- `fsck.hfsplus` - Alias for fsck.hfs+
 
-## Patrones y convenciones específicas
-- Un único binario multipropósito: la raíz contiene `hfsutil` que despacha subcomandos; los archivos en `src/hfsutil/` implementan cada comando. Para agregar un subcomando, añada el .c en `src/hfsutil/`, registrelo en `Makefile` (`OBJDIR`/objetos) y extienda `hfsutil.c` si es necesario.
-- Prefer compilación por separado de librerías: no modifique `libhfs/` o `librsrc/` sin actualizar sus `configure`/`Makefile`; use `./build.sh` para garantizar el orden correcto.
-- Objetos en `build/obj`: el Makefile coloca objetos en `build/obj`; respetar esa convención al añadir nuevos .o.
+### Traditional HFS Utilities (symlinks to hfsutil)
+- `hattrib`, `hcd`, `hcopy`, `hdel`, `hdir`, `hformat`, `hls`, `hmkdir`, `hmount`, `hpwd`, `hrename`, `hrmdir`, `humount`, `hvol`
 
-## Integraciones y dependencias externas
-- Dependencias estándar: compilador C (gcc/clang), `make`, utilidades POSIX. El proyecto asume un entorno Unix-like.
-- No hay dependencias de paquetes de terceros en tiempo de ejecución; las integraciones críticas son las llamadas a funciones dentro de `libhfs` y `librsrc`.
+## Build System
 
-## Ejemplos concretos (copiar/pegar para el agente)
-- Para reproducir un fallo de compilación en CI: ejecutar
-  - `./build.sh` (ver salida) luego `make` en la raíz.
-- Añadir un nuevo subcomando `hfoo`:
-  1. Añadir `src/hfsutil/hfoo.c` implementando `main` o las funciones necesarias.
-  2. Añadir `$(OBJDIR)/hfoo.o` en el `Makefile` y en `UTIL_OBJS`.
-  3. Ejecutar `make` y validar `./hfsutil hfoo`.
+### Build Commands
+```bash
+./build.sh          # Respects CC, CFLAGS, PREFIX variables
+make                # Build all components
+make symlinks       # Create filesystem utility symlinks
+make clean          # Clean all build artifacts and symlinks
+make install        # Install to PREFIX (default: /usr/local)
+make install-symlinks # Install with traditional command symlinks
+```
 
-## Qué evitar / límites del agente
-- No cambiar permisos de setuid ni recomendar instalación setuid; el README prohíbe setuid por razones de seguridad.
-- No asumir herramientas no listadas en README; si hace falta una dependencia nueva, documentarla en el PR.
+### Key Directories
+- `src/` - Source code for hfsutil and common utilities
+- `hfsck/` - HFS/HFS+ filesystem checker
+- `libhfs/` - Core HFS library
+- `librsrc/` - Resource fork library
+- `doc/man/` - Manual pages (sections 1 and 8)
+- `test/` - Test suite
 
-## Archivos de referencia rápido
-- `build.sh` — script de construcción principal
-- `Makefile` — reglas de build y symlink
-- `src/hfsutil/*.c` — implementaciones de subcomandos
-- `libhfs/`, `librsrc/` — librerías de bajo nivel
-- `hfsck/` — herramientas de verificación de HFS
-- `test/` — scripts de pruebas y generación de datos
+## Code Style Guidelines
 
-Si algo falta o deseas que el archivo incluya ejemplos más específicos (por ejemplo, fragmentos de `hfsutil.c` o cómo ejecutar pruebas en Windows vs WSL), dímelo y lo itero.
+### C Code
+- Use consistent indentation (2 spaces)
+- Follow existing naming conventions
+- Include proper error handling
+- Add comments for complex logic
+- Use `const` where appropriate
+
+### Build System
+- Support standard variables: CC, CXX, CFLAGS, CXXFLAGS, LDFLAGS, PREFIX
+- Use proper dependency tracking
+- Include clean targets
+- Support DESTDIR for staged installations
+
+### Documentation
+- Update manual pages for new features
+- Include examples in man pages
+- Keep README.md current
+- Document build requirements
+
+## HFS+ Implementation Notes
+
+### Key Features
+- Full HFS+ volume creation with proper structures
+- Volume header and allocation bitmap setup
+- Catalog and extents B-tree initialization
+- Unicode filename support
+- Large volume support (up to 8 exabytes)
+
+### Filesystem Detection
+- Automatic HFS vs HFS+ detection
+- Proper signature validation
+- Fallback mechanisms for edge cases
+
+## Testing
+
+### Test Structure
+- `test/run_tests.sh` - Main test runner
+- `test/test_*.sh` - Individual test suites
+- Comprehensive HFS+ formatting and validation tests
+- Build system validation
+
+### Manual Testing
+```bash
+# Test filesystem utilities
+./mkfs.hfs+ --version
+./fsck.hfs+ --version
+
+# Test HFS+ creation
+dd if=/dev/zero of=test.img bs=1M count=10
+./mkfs.hfs+ -l "Test Volume" test.img
+./fsck.hfs+ test.img
+```
+
+## Common Patterns
+
+### Version Information
+All utilities support `--version` and `--license` flags with consistent output format.
+
+### Error Handling
+Use proper exit codes and descriptive error messages. Follow Unix conventions.
+
+### Symlink Management
+Symlinks are generated by build system, not tracked in git. Use `make symlinks` to create them.
+
+## Maintenance Notes
+
+### Adding New Features
+1. Update source code with proper error handling
+2. Add/update manual pages
+3. Update test suite
+4. Update build system if needed
+5. Test installation process
+
+### Release Process
+1. Update version in `src/common/version.c`
+2. Update CHANGELOG.md
+3. Run full test suite
+4. Test installation process
+5. Create git tag
+
+## Dependencies
+- Standard C compiler (gcc/clang)
+- make
+- perl (for some build scripts)
+- Standard Unix utilities
+
+## Compatibility
+- Linux (primary target)
+- BSD variants
+- macOS
+- Other Unix-like systems
+
+Focus on maintaining compatibility while adding modern features and following Unix standards.

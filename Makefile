@@ -197,13 +197,18 @@ distclean: clean
 install: all install-libs
 	install -d $(DESTDIR)$(BINDIR)
 	install -d $(DESTDIR)$(MANDIR)/man1
+	install -d $(DESTDIR)$(MANDIR)/man8
 	install -m 755 hfsutil $(DESTDIR)$(BINDIR)/
-	# Install manual pages
+	# Install manual pages (section 1)
 	for man in doc/man/*.1; do \
 		install -m 644 $$man $(DESTDIR)$(MANDIR)/man1/; \
 	done
+	# Install manual pages (section 8)
+	for man in doc/man/*.8; do \
+		install -m 644 $$man $(DESTDIR)$(MANDIR)/man8/; \
+	done
 	@echo "Installed hfsutil to $(DESTDIR)$(BINDIR)/"
-	@echo "Installed manual pages to $(DESTDIR)$(MANDIR)/man1/"
+	@echo "Installed manual pages to $(DESTDIR)$(MANDIR)/man1/ and $(DESTDIR)$(MANDIR)/man8/"
 	@echo "You can optionally create symlinks with 'make install-symlinks'"
 
 install-libs:

@@ -26,9 +26,9 @@
 const char hfsutils_rcsid[] =
   "hfsutils 3.3.0";
 
-const char hfsutils_version[]   = "hfsutils version 4.0.0 (Apple Silicon fork)";
+const char hfsutils_version[]   = "hfsutils version 4.0.0";
 const char hfsutils_copyright[] = "Original Copyright (C) 1996-1998 Robert Leslie\n"
-                                  "Apple Silicon fork Copyright (C) 2025 Brock Gunter-Smith\n"
+                                  "Modern fork Copyright (C) 2025 Brock Gunter-Smith\n"
                                   "hfsutils re-port Copyright (C) 2025 Pablo Lezaeta";
 const char hfsutils_author[]    = "Original: Robert Leslie <rob@mars.org>\n"
                                   "Fork maintainer: Brock Gunter-Smith\n"

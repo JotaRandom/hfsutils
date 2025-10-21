@@ -1,0 +1,72 @@
+.TH MKFS.HFS 8 21-Oct-2025 HFSUTILS
+.SH NAME
+mkfs.hfs \- create an HFS filesystem
+.SH SYNOPSIS
+.B mkfs.hfs
+[-f] [-l
+.IR label ]
+.I device
+.RI [ partition-no ]
+.SH DESCRIPTION
+.B mkfs.hfs
+creates an HFS (Hierarchical File System) filesystem on a device or file.
+This is the standard Unix filesystem creation utility for HFS filesystems.
+.PP
+The
+.I device
+argument specifies the block device or file where the filesystem will be
+created. The device must already exist and be writable.
+.PP
+An optional
+.I label
+can be specified to name the volume. The name must be between 1-27 characters
+and cannot contain a colon (:). By default, the volume will be named
+.BR Untitled .
+.PP
+If the destination medium is partitioned, one partition must be selected to
+receive the filesystem. If there is only one HFS partition on the medium, it
+will be selected by default. Otherwise, the desired partition number must be
+specified on the command-line.
+.PP
+Partition number
+.B 0
+can be specified to format the entire medium as a single filesystem without a
+partition map. The
+.B -f
+option must be specified to force this operation if the medium currently
+contains a partition map.
+.SH OPTIONS
+.TP
+.B -f
+Force formatting. Required when formatting the entire medium (partition 0)
+if it currently contains a partition map.
+.TP
+.BI -l " label"
+Specify the volume label. Must be 1-27 characters and cannot contain colons.
+.TP
+.B --version
+Display version information and exit.
+.TP
+.B --license
+Display license information and exit.
+.SH EXAMPLES
+.TP
+mkfs.hfs /dev/sdb1
+Create an HFS filesystem on the first partition of the second SCSI disk.
+.TP
+mkfs.hfs -l "My Disk" /dev/sdb1
+Create an HFS filesystem with the label "My Disk".
+.TP
+mkfs.hfs -f /dev/sdb 0
+Format the entire disk as HFS, erasing any existing partition table.
+.SH NOTES
+The smallest volume size which can be formatted is 800K.
+.PP
+This command does not create or alter partition maps, although it can erase
+them when using partition 0 with the -f option.
+.SH SEE ALSO
+mkfs(8), mkfs.hfs+(8), fsck.hfs(8), hfsutils(1)
+.SH AUTHOR
+Robert Leslie <rob@mars.org>
+.br
+Pablo Lezaeta <prflr88@gmail.com>

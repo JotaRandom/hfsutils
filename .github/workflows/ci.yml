@@ -25,11 +25,11 @@ jobs:
           make -C hfsck clean || true
           make clean || true
 
-      - name: Build (with clean)
+      - name: Build with build script
         run: |
           ./build.sh
 
-      - name: Build base
+      - name: Build all components
         run: |
           make
           make -C libhfs
@@ -38,8 +38,22 @@ jobs:
 
       - name: Create symlinks
         run: |
-          make symlinks || true
+          make symlinks
 
-      - name: Run tests
+      - name: Test filesystem utilities
+        run: |
+          ./mkfs.hfs+ --version
+          ./fsck.hfs+ --version
+          ./mkfs.hfs --version
+          ./fsck.hfs --version
+
+      - name: Test installation
+        run: |
+          make install DESTDIR=/tmp/hfsutils-test
+          ls -la /tmp/hfsutils-test/usr/local/bin/
+          ls -la /tmp/hfsutils-test/usr/local/share/man/man1/
+          ls -la /tmp/hfsutils-test/usr/local/share/man/man8/
+
+      - name: Run comprehensive tests
         run: |
           make test

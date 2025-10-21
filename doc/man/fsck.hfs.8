@@ -1,0 +1,92 @@
+.TH FSCK.HFS 8 21-Oct-2025 HFSUTILS
+.SH NAME
+fsck.hfs \- check and repair an HFS filesystem
+.SH SYNOPSIS
+.B fsck.hfs
+[-fnvy] [-b
+.IR size ]
+.I device
+.RI [ partition-no ]
+.SH DESCRIPTION
+.B fsck.hfs
+checks an HFS (Hierarchical File System) filesystem and optionally repairs
+any errors found. This is the standard Unix filesystem checking utility
+for HFS filesystems.
+.PP
+The
+.I device
+argument specifies the block device or file containing the HFS filesystem
+to be checked.
+.PP
+If the filesystem is mounted, only a read-only check will be performed unless
+the
+.B -f
+option is used to force checking.
+.SH OPTIONS
+.TP
+.B -f
+Force checking even if the filesystem appears clean or is mounted.
+.TP
+.B -n
+No-write mode. Check the filesystem but do not make any changes.
+Useful for examining a filesystem without risk of modification.
+.TP
+.B -v
+Verbose mode. Display detailed information about the checking process.
+.TP
+.B -y
+Assume "yes" to all questions. Automatically repair any errors found
+without prompting for confirmation.
+.TP
+.BI -b " size"
+Specify the block size for the filesystem check.
+.TP
+.B --version
+Display version information and exit.
+.TP
+.B --license
+Display license information and exit.
+.SH EXAMPLES
+.TP
+fsck.hfs /dev/sdb1
+Check the HFS filesystem on the first partition of the second SCSI disk.
+.TP
+fsck.hfs -v /dev/sdb1
+Check the filesystem with verbose output showing detailed progress.
+.TP
+fsck.hfs -y /dev/sdb1
+Check and automatically repair any errors found without prompting.
+.TP
+fsck.hfs -n /dev/sdb1
+Check the filesystem in read-only mode without making any changes.
+.SH EXIT STATUS
+.B fsck.hfs
+returns one of the following exit codes:
+.TP
+.B 0
+No errors were found.
+.TP
+.B 1
+Errors were found and corrected.
+.TP
+.B 2
+Errors were found but not corrected.
+.TP
+.B 4
+Operational error.
+.TP
+.B 8
+Usage or syntax error.
+.SH NOTES
+It is recommended to unmount the filesystem before running
+.B fsck.hfs
+to ensure data integrity during the check and repair process.
+.PP
+Regular filesystem checking helps maintain data integrity and can
+prevent data loss due to filesystem corruption.
+.SH SEE ALSO
+fsck(8), fsck.hfs+(8), mkfs.hfs(8), hfsutils(1)
+.SH AUTHOR
+Robert Leslie <rob@mars.org>
+.br
+Pablo Lezaeta <prflr88@gmail.com>
