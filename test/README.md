@@ -23,11 +23,11 @@ Comprehensive testing framework for Apple Silicon HFS utilities.
 ## Test Structure
 
 ### 1. Test Data Generator (`generate_test_data.sh`)
-Creates various HFS images and sample files for testing:
-- **Small image** (1.44MB): Basic testing with simple file structure
-- **Medium image** (10MB): More complex directory hierarchies
-- **Large image** (50MB): Stress testing with many files
-- **Empty image**: Testing empty volume operations
+Creates various HFS and HFS+ images and sample files for testing:
+- **Small images** (1.44MB): Basic testing with simple file structure (HFS and HFS+)
+- **Medium images** (10MB): More complex directory hierarchies (HFS and HFS+)
+- **Large images** (50MB): Stress testing with many files (HFS and HFS+)
+- **Empty images**: Testing empty volume operations (HFS and HFS+)
 - **Corrupted image**: Error handling tests
 
 ### 2. Main Test Runner (`run_tests.sh`)
@@ -55,6 +55,13 @@ Comprehensive test harness with multiple test categories:
 - Invalid operations (e.g., deleting directories with hdel)
 - Edge cases (special characters, empty files, deep paths)
 
+#### HFS+ Specific Tests
+- HFS+ volume formatting with hformat -t hfs+ and mkfs.hfs+
+- Filesystem type detection (HFS vs HFS+)
+- Program name detection (mkfs.hfs, mkfs.hfs+, fsck.hfs+)
+- HFS+ volume information and validation
+- Mixed HFS/HFS+ operations and compatibility
+
 ### 3. Simple Integration Test (`simple_integration_test.sh`)
 A straightforward demonstration that:
 1. Creates and formats an HFS volume
@@ -79,6 +86,7 @@ Test patterns:
   basic            Basic functionality only
   integration      Integration workflows only
   errors           Error handling only
+  hfsplus          HFS+ specific tests only
 ```
 
 ## Test Results
@@ -86,10 +94,13 @@ Test patterns:
 The test suite validates:
 - ✅ All utilities compile and run on Apple Silicon
 - ✅ Basic HFS operations (mount, copy, delete, rename)
+- ✅ HFS+ volume creation and formatting
+- ✅ Filesystem type detection and program name recognition
 - ✅ Directory navigation and management
 - ✅ Inter-utility workflows and data pipelines
 - ✅ Error handling and edge cases
 - ✅ Volume information and management
+- ✅ Mixed HFS/HFS+ environment compatibility
 
 ## Known Issues
 

@@ -18,7 +18,30 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DATA_DIR="$SCRIPT_DIR/data"
 TEMP_DIR="$SCRIPT_DIR/temp"
 
-# Utility paths
+# Utility paths - using unified binary
+HFSUTIL="$PROJECT_ROOT/hfsutil"
+HFSCK="$PROJECT_ROOT/hfsck/hfsck"
+
+# Create symlinks for compatibility if they don't exist
+if [ ! -L "$PROJECT_ROOT/hformat" ]; then
+    ln -sf hfsutil "$PROJECT_ROOT/hformat"
+fi
+if [ ! -L "$PROJECT_ROOT/hmount" ]; then
+    ln -sf hfsutil "$PROJECT_ROOT/hmount"
+fi
+if [ ! -L "$PROJECT_ROOT/humount" ]; then
+    ln -sf hfsutil "$PROJECT_ROOT/humount"
+fi
+if [ ! -L "$PROJECT_ROOT/hcopy" ]; then
+    ln -sf hfsutil "$PROJECT_ROOT/hcopy"
+fi
+if [ ! -L "$PROJECT_ROOT/hmkdir" ]; then
+    ln -sf hfsutil "$PROJECT_ROOT/hmkdir"
+fi
+if [ ! -L "$PROJECT_ROOT/hls" ]; then
+    ln -sf hfsutil "$PROJECT_ROOT/hls"
+fi
+
 HFORMAT="$PROJECT_ROOT/hformat"
 HMOUNT="$PROJECT_ROOT/hmount"
 HUMOUNT="$PROJECT_ROOT/humount"
@@ -116,14 +139,14 @@ cd "$DATA_DIR"
 # Clean existing test images
 rm -f *.hfs *.img
 
-log "Creating test HFS images..."
+log "Creating test HFS and HFS+ images..."
 
 #------------------------------------------------------------------------------
-# 1. Small image (1.44MB floppy disk size)
+# 1. Small HFS image (1.44MB floppy disk size)
 #------------------------------------------------------------------------------
-log "Creating small test image (1440KB)..."
+log "Creating small HFS test image (1440KB)..."
 
-# Create empty file first, then format it
+# Create empty file first, then format it as HFS
 dd if=/dev/zero of=small_test.hfs bs=1024 count=1440 2>/dev/null
 "$HFORMAT" -l "Test Floppy" small_test.hfs
 "$HMOUNT" small_test.hfs
@@ -136,12 +159,25 @@ dd if=/dev/zero of=small_test.hfs bs=1024 count=1440 2>/dev/null
 "$HCOPY" "$TEMP_DIR/medium_text.txt" :docs:manual.txt
 
 "$HUMOUNT"
-success "Small test image created: small_test.hfs"
+success "Small HFS test image created: small_test.hfs"
 
 #------------------------------------------------------------------------------
-# 2. Medium image (10MB)
+# 1b. Small HFS+ image (1.44MB floppy disk size)
 #------------------------------------------------------------------------------
-log "Creating medium test image (10MB)..."
+log "Creating small HFS+ test image (1440KB)..."
+
+# Create empty file first, then format it as HFS+
+dd if=/dev/zero of=small_test_hfsplus.img bs=1024 count=1440 2>/dev/null
+"$HFORMAT" -t hfs+ -l "Test Floppy Plus" small_test_hfsplus.img
+
+# Note: HFS+ volumes cannot be mounted with the old HFS library
+# This image is for testing HFS+ formatting and fsck functionality
+success "Small HFS+ test image created: small_test_hfsplus.img"
+
+#------------------------------------------------------------------------------
+# 2. Medium HFS image (10MB)
+#------------------------------------------------------------------------------
+log "Creating medium HFS test image (10MB)..."
 
 # Create 10MB file
 dd if=/dev/zero of=medium_test.hfs bs=1024 count=10240 2>/dev/null
@@ -169,17 +205,37 @@ dd if=/dev/zero of=medium_test.hfs bs=1024 count=10240 2>/dev/null
 "$HCOPY" "$TEMP_DIR/test file (with spaces & symbols).txt" ":Documents:special file.txt"
 
 "$HUMOUNT"
-success "Medium test image created: medium_test.hfs"
+success "Medium HFS test image created: medium_test.hfs"
 
 #------------------------------------------------------------------------------
-# 3. Empty image for testing
+# 2b. Medium HFS+ image (10MB)
 #------------------------------------------------------------------------------
-log "Creating empty test image (1440KB)..."
+log "Creating medium HFS+ test image (10MB)..."
 
-# Create empty file and format it
+# Create 10MB file and format as HFS+
+dd if=/dev/zero of=medium_test_hfsplus.img bs=1024 count=10240 2>/dev/null
+"$HFORMAT" -t hfs+ -l "Medium Test Plus" medium_test_hfsplus.img
+
+# Note: HFS+ volumes cannot be mounted with the old HFS library
+# This image is for testing HFS+ formatting and fsck functionality
+success "Medium HFS+ test image created: medium_test_hfsplus.img"
+
+#------------------------------------------------------------------------------
+# 3. Empty images for testing
+#------------------------------------------------------------------------------
+log "Creating empty HFS test image (1440KB)..."
+
+# Create empty file and format it as HFS
 dd if=/dev/zero of=empty_test.hfs bs=1024 count=1440 2>/dev/null
 "$HFORMAT" -l "Empty Test" empty_test.hfs
-success "Empty test image created: empty_test.hfs"
+success "Empty HFS test image created: empty_test.hfs"
+
+log "Creating empty HFS+ test image (1440KB)..."
+
+# Create empty file and format it as HFS+
+dd if=/dev/zero of=empty_test_hfsplus.img bs=1024 count=1440 2>/dev/null
+"$HFORMAT" -t hfs+ -l "Empty Test Plus" empty_test_hfsplus.img
+success "Empty HFS+ test image created: empty_test_hfsplus.img"
 
 #------------------------------------------------------------------------------
 # 4. Large image (50MB) for stress testing
@@ -213,7 +269,20 @@ done
 "$HCOPY" "$TEMP_DIR/binary_16k.dat" :Applications:app_data.bin
 
 "$HUMOUNT"
-success "Large test image created: large_test.hfs"
+success "Large HFS test image created: large_test.hfs"
+
+#------------------------------------------------------------------------------
+# 4b. Large HFS+ image (50MB) for stress testing
+#------------------------------------------------------------------------------
+log "Creating large HFS+ test image (50MB)..."
+
+# Create 50MB file and format as HFS+
+dd if=/dev/zero of=large_test_hfsplus.img bs=1024 count=51200 2>/dev/null
+"$HFORMAT" -t hfs+ -l "Large Test Plus" large_test_hfsplus.img
+
+# Note: HFS+ volumes cannot be mounted with the old HFS library
+# This image is for testing HFS+ formatting and fsck functionality
+success "Large HFS+ test image created: large_test_hfsplus.img"
 
 #==============================================================================
 # Test image with known corruption (for error testing)
@@ -256,7 +325,13 @@ echo
 log "Test data generation complete!"
 echo
 echo "Created HFS images:"
-ls -lh "$DATA_DIR"/*.hfs | while read -r line; do
+ls -lh "$DATA_DIR"/*.hfs 2>/dev/null | while read -r line; do
+    echo "  $line"
+done
+
+echo
+echo "Created HFS+ images:"
+ls -lh "$DATA_DIR"/*.img 2>/dev/null | while read -r line; do
     echo "  $line"
 done
 
