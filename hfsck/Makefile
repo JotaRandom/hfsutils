@@ -40,7 +40,7 @@ DEFINES =	-DHAVE_CONFIG_H
 LIBOBJS =	
 LIBS =		 ./../libhfs/libhfs.a
 
-COPTS =		-g -O2
+COPTS =		-g -O2 -Wall
 LDOPTS =	
 
 AR =		ar rc
