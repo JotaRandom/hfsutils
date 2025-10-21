@@ -2,7 +2,7 @@
 
 #
 # HFS Utilities Test Suite
-# Comprehensive testing framework for Apple Silicon HFS utilities
+# Comprehensive testing framework for the HFS utilities
 #
 
 set -e  # Exit on any error
