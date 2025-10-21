@@ -1,0 +1,14 @@
+# Force LF for text files on the repo (target platform: Unix/WSL)
+* text=auto eol=lf
+
+# Ensure scripts are always LF
+*.sh text eol=lf
+hfsck/configure text eol=lf
+build.sh text eol=lf
+
+# Docs and markdown
+*.md text eol=lf
+
+# C/C++ sources and headers
+*.c text eol=lf
+*.h text eol=lf
