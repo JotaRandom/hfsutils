@@ -29,6 +29,13 @@ jobs:
         run: |
           ./build.sh
 
+      - name: Build base
+        run: |
+          make
+          make -C libhfs
+          make -C librsrc
+          make -C hfsck
+
       - name: Create symlinks
         run: |
           make symlinks || true
