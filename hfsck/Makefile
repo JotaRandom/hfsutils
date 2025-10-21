@@ -65,8 +65,8 @@ ALL_LDFLAGS =	$(LDOPTS)
 TARGETS =	$(HFSCHECK)
 
 HFSCHECK =	hfsck
-HFSCKSRCS =	ck_btree.c ck_mdb.c ck_volume.c hfsck.c main.c util.c
-HFSCKOBJS =	$(HFSCKSRCS:.c=.o) suid.o version.o hfs_detect.o
+HFSCKSRCS =	ck_btree.c ck_mdb.c ck_volume.c hfsck.c main.c util.c journal.c
+HFSCKOBJS =	ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o
 
 ###############################################################################
 

@@ -31,6 +31,7 @@
 # include "hfsck.h"
 # include "suid.h"
 # include "version.h"
+# include "journal.h"
 # include "../include/hfsutil/hfs_detect.h"
 
 int options;
@@ -216,24 +217,25 @@ int main(int argc, char *argv[])
       options &= ~HFSCK_REPAIR;
     }
 
-  /* Detect filesystem type before proceeding */
+  /* Detect filesystem type and handle HFS+ journaling */
   if (force_fs_type != 0) {
     int fd;
     hfs_fs_type_t detected_type;
     
     suid_enable();
-    fd = open(path, O_RDONLY);
+    fd = open(path, REPAIR ? O_RDWR : O_RDONLY);
     suid_disable();
     
     if (fd >= 0) {
       detected_type = hfs_detect_fs_type(fd);
-      close(fd);
       
       if (force_fs_type == 1 && detected_type != FS_TYPE_HFS) {
         fprintf(stderr, "%s: %s is not an HFS filesystem\n", argv[0], path);
+        close(fd);
         return 1;
       } else if (force_fs_type == 2 && detected_type != FS_TYPE_HFSPLUS && detected_type != FS_TYPE_HFSX) {
         fprintf(stderr, "%s: %s is not an HFS+ filesystem\n", argv[0], path);
+        close(fd);
         return 1;
       }
       
@@ -243,6 +245,62 @@ int main(int argc, char *argv[])
                              (detected_type == FS_TYPE_HFSX) ? "HFSX" : "Unknown";
         printf("Detected filesystem: %s\n", fs_name);
       }
+      
+      /* Handle HFS+ journaling if detected */
+      if (detected_type == FS_TYPE_HFSPLUS || detected_type == FS_TYPE_HFSX) {
+        struct HFSPlus_VolumeHeader vh;
+        
+        /* Read HFS+ Volume Header */
+        if (lseek(fd, 1024, SEEK_SET) != -1 && 
+            read(fd, &vh, sizeof(vh)) == sizeof(vh)) {
+          
+          uint32_t attributes = be32toh(vh.attributes);
+          
+          if (attributes & HFSPLUS_VOL_JOURNALED) {
+            if (VERBOSE) {
+              printf("HFS+ volume has journaling enabled\n");
+            }
+            
+            /* Check journal validity */
+            int journal_status = journal_is_valid(fd, &vh);
+            
+            if (journal_status < 0) {
+              fprintf(stderr, "%s: warning: journal is corrupt\n", argv[0]);
+              
+              if (REPAIR) {
+                if (VERBOSE) {
+                  printf("Disabling corrupt journal\n");
+                }
+                journal_disable(fd, &vh);
+              }
+            } else if (journal_status > 0) {
+              /* Replay journal transactions */
+              if (VERBOSE) {
+                printf("Replaying journal transactions\n");
+              }
+              
+              int replay_result = journal_replay(fd, &vh, REPAIR);
+              
+              if (replay_result != 0) {
+                fprintf(stderr, "%s: warning: journal replay failed\n", argv[0]);
+                
+                if (REPAIR) {
+                  if (VERBOSE) {
+                    printf("Disabling problematic journal\n");
+                  }
+                  journal_disable(fd, &vh);
+                }
+              } else if (VERBOSE) {
+                printf("Journal replay completed successfully\n");
+              }
+            }
+          } else if (VERBOSE) {
+            printf("HFS+ volume does not have journaling enabled\n");
+          }
+        }
+      }
+      
+      close(fd);
     }
   }
 

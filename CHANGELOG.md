@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2025-10-21
+
+### Added
+- **HFS+ Journaling Support**: Complete implementation of HFS+ journal replay and validation
+  - journal.h/journal.c - Full journaling infrastructure
+  - Journal transaction replay for crash recovery
+  - Journal validation and corruption detection
+  - Automatic journal disabling for corrupted journals
+  - Comprehensive logging to hfsutils.log
+- **Enhanced fsck.hfs+**: Advanced HFS+ filesystem checking with journaling support
+  - Automatic journal replay before filesystem validation
+  - Journal corruption detection and repair
+  - Support for both journaled and non-journaled HFS+ volumes
+
+### Fixed
+- **Journal Write Warnings**: Fixed unused result warnings in journal operations
+
 ## [4.0.1] - 2025-10-21
 
 ### Added

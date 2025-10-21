@@ -18,6 +18,7 @@ COMPLETED FEATURES (Version 4.0.0):
   * ✅ Proper HFS+ structures (volume header, allocation bitmap, B-trees)
   * ✅ Unicode filename support
   * ✅ Large volume support
+  * ✅ HFS+ Journaling support (journal replay, validation, repair)
 
   ✅ Unix Standard Utilities
   * ✅ mkfs.hfs, mkfs.hfs+ - Standard filesystem creation utilities
@@ -74,7 +75,7 @@ REMAINING TODO ITEMS:
   * AppleSingle, Netatalk-/CAP-style AppleDouble support
 
   code quality:
-  * fix compilation warnings (setreuid/setregid return values)
+  * ✅ fix compilation warnings (setreuid/setregid return values)
   * improve error handling consistency
   * add more comprehensive error messages
   * memory leak detection and fixes
