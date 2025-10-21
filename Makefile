@@ -2,7 +2,7 @@
 # Builds unified hfsutil binary with all utilities
 
 CC = gcc
-CFLAGS = -g -O2 -Wall -I. -I./include -I./include/common -I./include/hfsutil -I./include/binhex -I./libhfs -I./librsrc
+CFLAGS = -g -O2 -Wall -Werror -I. -I./include -I./include/common -I./include/hfsutil -I./include/binhex -I./libhfs -I./librsrc
 LDFLAGS = -L./libhfs -L./librsrc
 LIBS = -lhfs -lrsrc
 
@@ -141,12 +141,14 @@ clean:
 	rm -rf $(BUILDDIR)
 	$(MAKE) -C libhfs clean
 	$(MAKE) -C librsrc clean
+	$(MAKE) -C hfsck clean
 
 distclean: clean
 	rm -f config.h config.log config.status Makefile
 	rm -rf autom4te.cache
 	$(MAKE) -C libhfs distclean
 	$(MAKE) -C librsrc distclean
+	$(MAKE) -C hfsck distclean
 
 install: all
 	install -d $(DESTDIR)/usr/local/bin

@@ -42,7 +42,7 @@ DEFINES =	-DHAVE_CONFIG_H
 LIBOBJS =	
 LIBS =		
 
-COPTS =		-g -O2
+COPTS =		-g -O2 -Werror
 LDOPTS =	
 
 AR =		ar rc
