@@ -18,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build Documentation**: Comprehensive BUILD.md with usage examples
 - **Validation Scripts**: validate_build.sh and test_build.sh for verification
 - **Cross-Compilation Support**: Easy cross-compilation via compiler variables
+- **HFS/HFS+ Detection Framework**: Automatic filesystem type detection
+- **Enhanced hfsck**: Supports both HFS and HFS+ with automatic detection
+- **Enhanced hformat**: Framework for HFS and HFS+ formatting with type selection
+- **Standard Filesystem Utilities**: fsck.hfs, fsck.hfs+, mkfs.hfs, mkfs.hfs+ symlinks
+- **Date Limit Handling**: Graceful handling of HFS date limit (February 6, 2040)
+- **Program Name Detection**: Utilities behave differently based on invocation name
+- **Complete HFS+ Formatting**: Full HFS+ volume creation with proper structures
+- **HFS+ Volume Header**: Complete HFS+ superblock creation and initialization
+- **HFS+ System Files**: Allocation, extents, catalog, and attributes file setup
+- **Block Size Optimization**: Automatic optimal block size selection for volumes
+- **Endianness Handling**: Proper big-endian format for all HFS+ structures
+- **mkfs.hfs/mkfs.hfs+ Commands**: Standard Unix filesystem creation utilities
 
 ### Changed
 - **Unified Binary Architecture**: Single hfsutil executable with all utilities
@@ -25,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced build.sh**: Now passes environment variables to sub-builds
 - **Updated Installation Layout**: Proper Unix-style directory structure
 - **Improved Documentation**: Updated README.md with new build system features
+- **hfsck Enhancement**: Now detects filesystem type and supports program name variants
+- **hformat Enhancement**: Added filesystem type selection (-t option) and program name detection
+- **Installation Process**: Now creates standard filesystem utility symlinks
+- **Command Integration**: Added mkfs.hfs, mkfs.hfs+, fsck.hfs+ to unified binary
 
 ### Removed
 - **Legacy Tcl/Tk/X11 Components**: Removed for better maintainability and reduced dependencies
