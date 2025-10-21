@@ -3,7 +3,10 @@
 
 # Ensure scripts are always LF
 *.sh text eol=lf
-hfsck/configure text eol=lf
+*/configure text eol=lf
+configure text eol=lf
+*/Makefile text eol=le
+Makefile text eol=lf
 build.sh text eol=lf
 
 # Docs and markdown
