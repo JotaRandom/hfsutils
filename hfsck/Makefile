@@ -1,5 +1,4 @@
-#
-# librsrc - library for reading and writing Macintosh resources
+# hfsck - filesystem checker for HFS volumes
 # Copyright (C) 1996-1998 Robert Leslie
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,12 +15,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# $Id: Makefile.in,v 1.8 1998/04/12 01:33:26 rob Exp $
+# $Id: Makefile.in,v 1.0 2025/10/20 user Exp $
 #
 
 
 src =		.
-
+VPATH =		.
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
@@ -34,13 +33,12 @@ INCDEST =	${prefix}/include
 LIBDEST =	${exec_prefix}/lib
 
 INSTALL =	/usr/bin/install -c
-LIBINSTALL =	${INSTALL} -m 644
 
 CC =		gcc
-INCLUDES =	
+INCLUDES =	 -I./../include -I./../include/common -I./../libhfs -I./../src/common
 DEFINES =	-DHAVE_CONFIG_H
 LIBOBJS =	
-LIBS =		
+LIBS =		 ./../libhfs/libhfs.a
 
 COPTS =		-g -O2
 LDOPTS =	
@@ -55,21 +53,18 @@ LDFLAGS =	$(LDOPTS)
 
 ###############################################################################
 
-TARGETS =	$(RSRCTARGET)
+TARGETS =	$(HFSCHECK)
 
-RSRCTARGET =	librsrc.a
-RSRCOBJS =	data.o rsrc.o version.o $(LIBOBJS)
+HFSCHECK =	hfsck
+HFSCKSRCS =	ck_btree.c ck_mdb.c ck_volume.c hfsck.c main.c util.c
+HFSCKOBJS =	$(HFSCKSRCS:.c=.o) suid.o version.o
 
 ###############################################################################
 
 all :: $(TARGETS)
 
-check :: all
-	@echo "No self-tests available."
-
 install ::
-	$(LIBINSTALL) librsrc.a "$(LIBDEST)/."
-	$(LIBINSTALL) rsrc.h "$(INCDEST)/."
+	@echo "No install target for hfsck"
 
 again :: clean all
 
@@ -82,10 +77,11 @@ depend ::
 
 clean ::
 	rm -f $(TARGETS) *.o gmon.* core
-	rm -f main
+	rm -rf autom4te.cache .stamp
 
 distclean :: clean
 	rm -f config.status config.cache config.log config.h Makefile
+	rm -f configure
 
 maintainer-clean :: distclean
 	rm -f config.h.in configure
@@ -109,19 +105,26 @@ config.status: .stamp/configure .stamp/config.h.in Makefile.in
 
 ###############################################################################
 
-$(RSRCTARGET): $(RSRCOBJS)
-	$(AR) $@ $(RSRCOBJS)
-	$(RANLIB) $@
+$(HFSCHECK): $(HFSCKOBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(HFSCKOBJS) $(LIBS)
 
-main.o:
-	$(CC) $(CFLAGS) -I. -I../libhfs -c main.c -o $@
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
 
-main: librsrc.a main.o
-	$(CC) $(LDFLAGS) -L. -L../libhfs main.o -lhfs -lrsrc -o $@
+# Common support objects from src/common
+suid.o:
+	$(CC) $(CFLAGS) -c ../src/common/suid.c -o suid.o
+
+version.o:
+	$(CC) $(CFLAGS) -c ../src/common/version.c -o version.o
+
+###############################################################################
 
 ### DEPENDENCIES FOLLOW #######################################################
 
-data.o: data.c config.h data.h
-main.o: main.c /usr/local/include/hfs.h rsrc.h
-rsrc.o: rsrc.c config.h librsrc.h rsrc.h data.h
-version.o: version.c version.h
+ck_btree.o: ck_btree.c ck_btree.h
+ck_mdb.o: ck_mdb.c ck_mdb.h
+ck_volume.o: ck_volume.c ck_volume.h
+hfsck.o: hfsck.c hfsck.h
+main.o: main.c util.h
+util.o: util.c util.h

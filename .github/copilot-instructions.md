@@ -12,11 +12,13 @@ Ayuda a implementar y mantener las utilidades HFS (hfsutils). El repo genera un 
 - Código de utilidades: `src/hfsutil/*.c` implementa cada subcomando (ej. `hcopy.c`, `hls.c`, `hmount.c`). Cambios en la interfaz de subcomando deben reflejarse en `hfsutil.c`.
 
 ## Flujo de desarrollo y comandos útiles
+- IMPORTANTE: Antes de ejecutar cualquier `make`, ejecutar `make clean` en la raíz y en las subcarpetas relevantes (`libhfs/`, `librsrc/`, `hfsck/`) para asegurarse de un build reproducible.
+
 - Build rápido (usa los scripts del repo):
-  - `./build.sh` — script cómodo que ejecuta `./configure` y `make` en `libhfs/` y `librsrc/`, luego `make` en la raíz.
-  - `make` — compila `hfsutil` (requiere que `libhfs` y `librsrc` ya estén configuradas/compiladas).
+  - `./build.sh` — script cómodo que ejecuta `./configure` y `make` en `libhfs/` y `librsrc/`, luego `make` en la raíz. Nota: el script asume que ha ejecutado `make clean` previamente si desea un build desde cero.
+  - `make` — compila `hfsutil` (requiere que `libhfs` y `librsrc` ya estén configuradas/compiladas). Recomendado: `make clean; make`.
   - `make symlinks` o `make install-symlinks` — crea los nombres tradicionales (por ejemplo `hcopy`) apuntando a `hfsutil`.
-  - `make test` — ejecuta `test/generate_test_data.sh` y `test/run_tests.sh`.
+  - `make test` — ejecuta `test/generate_test_data.sh` y `test/run_tests.sh`. Recomendado: `make clean; ./build.sh; make symlinks; make test`.
 
 ## Patrones y convenciones específicas
 - Un único binario multipropósito: la raíz contiene `hfsutil` que despacha subcomandos; los archivos en `src/hfsutil/` implementan cada comando. Para agregar un subcomando, añada el .c en `src/hfsutil/`, registrelo en `Makefile` (`OBJDIR`/objetos) y extienda `hfsutil.c` si es necesario.

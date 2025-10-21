@@ -53,7 +53,9 @@ lib/librsrc/config.status
 librsrc/config.h
 librsrc/config.log
 librsrc/config.status
-hfsck/Makefile
+hfsck/.config.h
+hfsck/config.log
+hfsck/config.status
 linux/Makefile
 
 # Test data

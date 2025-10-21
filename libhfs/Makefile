@@ -45,7 +45,7 @@ DEFINES =	-DHAVE_CONFIG_H
 LIBOBJS =	
 LIBS =		
 
-COPTS =		-g -O2 -Werror
+COPTS =		-g -O2
 LDOPTS =	
 
 AR =		ar rc
@@ -86,12 +86,15 @@ depend ::
 
 clean ::
 	rm -f $(TARGETS) *.o gmon.* core
+	rm -rf autom4te.cache .stamp
 
 distclean :: clean
 	rm -f config.status config.cache config.log config.h Makefile
+	rm -f configure
 
 maintainer-clean :: distclean
 	rm -f config.h.in configure
+	rm -f configure~ Makefile.in~ config.h.in~
 
 ###############################################################################
 
