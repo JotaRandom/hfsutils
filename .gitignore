@@ -1,5 +1,7 @@
 # But do not ignore this .gitignore file itself
 !.gitignore
+!.gitattributes
+!.github/
 
 # Build artifacts and directories
 build/
