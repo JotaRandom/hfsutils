@@ -42,7 +42,7 @@ MKFS_LINKS = mkfs.hfs mkfs.hfs+ mkfs.hfsplus
 all: libhfs librsrc hfsck hfsutil
 
 # Target to create symlinks for backward compatibility
-symlinks: hfsutil $(EXECUTABLES) hdir
+symlinks: hfsutil $(EXECUTABLES) hdir $(MKFS_LINKS) $(FSCK_LINKS)
 
 # Build libraries
 libhfs:
@@ -165,9 +165,16 @@ $(EXECUTABLES): hfsutil
 hdir: hfsutil
 	ln -sf hfsutil hdir
 
+# Create filesystem utility symlinks
+$(MKFS_LINKS): hfsutil
+	ln -sf hfsutil $@
+
+$(FSCK_LINKS): hfsck
+	ln -sf hfsck/hfsck $@
+
 clean:
 	@echo "Cleaning executables and build artifacts..."
-	@for f in $(EXECUTABLES) hdir hfsutil; do \
+	@for f in $(EXECUTABLES) hdir hfsutil $(MKFS_LINKS) $(FSCK_LINKS); do \
 		if [ -L $$f ] || [ -f $$f ]; then \
 			rm -f $$f; \
 			echo " - removed $$f"; \
