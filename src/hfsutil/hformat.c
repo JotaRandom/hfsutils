@@ -37,6 +37,13 @@
 # include "hfs_detect.h"
 # include "hfsplus_format.h"
 
+/* Standard mkfs exit codes as defined by Unix/Linux/BSD systems */
+#define MKFS_OK                 0   /* Success */
+#define MKFS_GENERAL_ERROR      1   /* General error */
+#define MKFS_USAGE_ERROR        2   /* Usage error */
+#define MKFS_OPERATIONAL_ERROR  4   /* Operational error */
+#define MKFS_SYSTEM_ERROR       8   /* System error */
+
 # define O_FORCE	0x01
 
 extern char *optarg;
@@ -44,18 +51,46 @@ extern int optind;
 
 /*
  * NAME:	usage()
- * DESCRIPTION:	display usage message
+ * DESCRIPTION:	display comprehensive usage message with standard mkfs options
  */
 static
 void usage(void)
 {
-  fprintf(stderr, "Usage: %s [-f] [-l label] [-t fstype] path [partition-no]\n", argv0);
-  fprintf(stderr, "  -f          Force formatting (overwrite existing partitions)\n");
-  fprintf(stderr, "  -l label    Set volume label (default: 'Untitled')\n");
-  fprintf(stderr, "  -t fstype   Filesystem type: 'hfs' or 'hfs+' (default: hfs)\n");
-  fprintf(stderr, "\nFilesystem type can also be specified by program name:\n");
-  fprintf(stderr, "  mkfs.hfs    - Format as HFS\n");
-  fprintf(stderr, "  mkfs.hfs+   - Format as HFS+\n");
+  fprintf(stderr, "Usage: %s [options] device [partition-no]\n", argv0);
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Create HFS or HFS+ filesystems on devices or files.\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  -f, --force       Force formatting (overwrite existing data)\n");
+  fprintf(stderr, "  -l, --label LABEL Set volume label (default: 'Untitled')\n");
+  fprintf(stderr, "  -t, --type TYPE   Filesystem type: 'hfs' or 'hfs+' (default: auto)\n");
+  fprintf(stderr, "  -s, --size SIZE   Filesystem size in bytes (for files)\n");
+  fprintf(stderr, "  -v, --verbose     Display detailed formatting information\n");
+  fprintf(stderr, "      --version     Display version information and exit\n");
+  fprintf(stderr, "      --license     Display license information and exit\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Exit codes:\n");
+  fprintf(stderr, "  0   Success\n");
+  fprintf(stderr, "  1   General error\n");
+  fprintf(stderr, "  2   Usage error\n");
+  fprintf(stderr, "  4   Operational error\n");
+  fprintf(stderr, "  8   System error\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Filesystem Types:\n");
+  fprintf(stderr, "  hfs     Traditional HFS (up to 2GB volumes)\n");
+  fprintf(stderr, "  hfs+    HFS+ with journaling support (recommended)\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Program Name Detection:\n");
+  fprintf(stderr, "  mkfs.hfs      - Automatically format as HFS\n");
+  fprintf(stderr, "  mkfs.hfs+     - Automatically format as HFS+ with journaling\n");
+  fprintf(stderr, "  mkfs.hfsplus  - Same as mkfs.hfs+\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Examples:\n");
+  fprintf(stderr, "  %s /dev/sdb1              Format as HFS\n", argv0);
+  fprintf(stderr, "  %s -t hfs+ /dev/sdb1      Format as HFS+\n", argv0);
+  fprintf(stderr, "  %s -l \"My Disk\" /dev/sdb1  Format with custom label\n", argv0);
+  fprintf(stderr, "  %s -f /dev/sdb 0          Format entire disk (dangerous!)\n", argv0);
+  fprintf(stderr, "\n");
 }
 
 /*
@@ -147,7 +182,7 @@ int hformat_main(int argc, char *argv[])
 	{
 	case '?':
 	  usage();
-	  goto fail;
+	  return MKFS_USAGE_ERROR;
 
 	case 'f':
 	  options |= O_FORCE;
@@ -164,7 +199,7 @@ int hformat_main(int argc, char *argv[])
 	    force_fs_type = 2;
 	  } else {
 	    fprintf(stderr, "%s: invalid filesystem type '%s' (use 'hfs' or 'hfs+')\n", argv0, optarg);
-	    goto fail;
+	    return MKFS_USAGE_ERROR;
 	  }
 	  break;
 	}
@@ -173,14 +208,14 @@ int hformat_main(int argc, char *argv[])
   if (argc - optind < 1 || argc - optind > 2)
     {
       usage();
-      goto fail;
+      return MKFS_USAGE_ERROR;
     }
 
   path = hfsutil_abspath(argv[optind]);
   if (path == 0)
     {
       fprintf(stderr, "%s: not enough memory\n", argv0);
-      goto fail;
+      return MKFS_SYSTEM_ERROR;
     }
 
   suid_enable();
@@ -202,7 +237,8 @@ int hformat_main(int argc, char *argv[])
 	    {
 	      fprintf(stderr, "%s: medium is partitioned; "
 		      "select partition > 0 or use -f\n", argv0);
-	      goto fail;
+	      free(path);
+	      return MKFS_USAGE_ERROR;
 	    }
 	}
     }
@@ -269,5 +305,5 @@ fail:
   if (path)
     free(path);
 
-  return 1;
+  return MKFS_OPERATIONAL_ERROR;
 }

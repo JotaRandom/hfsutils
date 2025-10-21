@@ -20,13 +20,19 @@
 #include "journal.h"
 
 /*
- * Calculate checksum for journal structures
+ * NAME:        journal_calculate_checksum()
+ * DESCRIPTION: Calculate checksum for HFS+ journal structures
+ *              Uses simple 32-bit word summation as per HFS+ specification
+ * PARAMETERS:  data - pointer to data to checksum
+ *              size - size of data in bytes (must be multiple of 4)
+ * RETURNS:     32-bit checksum value in host byte order
  */
 uint32_t journal_calculate_checksum(const void *data, size_t size)
 {
     uint32_t sum = 0;
     const uint32_t *ptr = (const uint32_t *)data;
     
+    /* Sum all 32-bit words in big-endian format */
     for (size_t i = 0; i < size / 4; i++) {
         sum += be32toh(ptr[i]);
     }
@@ -35,7 +41,14 @@ uint32_t journal_calculate_checksum(const void *data, size_t size)
 }
 
 /*
- * Log error messages to hfsutils.log
+ * NAME:        journal_log_error()
+ * DESCRIPTION: Log error messages to hfsutils.log with timestamp
+ *              Provides comprehensive logging for journal operations
+ *              and troubleshooting. Log file is created if it doesn't exist.
+ * PARAMETERS:  device - device name or NULL for generic journal messages
+ *              message - error message to log
+ * RETURNS:     void
+ * NOTES:       Write errors are silently ignored to prevent logging loops
  */
 void journal_log_error(const char *device, const char *message)
 {
@@ -45,13 +58,14 @@ void journal_log_error(const char *device, const char *message)
         time_t now = time(NULL);
         struct tm *tm = localtime(&now);
         
+        /* Format: [YYYY-MM-DD HH:MM:SS] device: message */
         snprintf(buf, sizeof(buf), "[%04d-%02d-%02d %02d:%02d:%02d] %s: %s\n",
                 tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
                 tm->tm_hour, tm->tm_min, tm->tm_sec,
                 device ? device : "journal", message);
         
         if (write(fd, buf, strlen(buf)) == -1) {
-            /* Ignore write errors for logging */
+            /* Ignore write errors for logging to prevent infinite loops */
         }
         close(fd);
     }

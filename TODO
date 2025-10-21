@@ -76,8 +76,9 @@ REMAINING TODO ITEMS:
 
   code quality:
   * ✅ fix compilation warnings (setreuid/setregid return values)
-  * improve error handling consistency
-  * add more comprehensive error messages
+  * ✅ standardize Unix/Linux/BSD exit codes (fsck: 0,1,2,4,8,16,32,128; mkfs: 0,1,2,4,8)
+  * ✅ improve error handling consistency with proper exit codes
+  * ✅ add comprehensive code documentation and comments
   * memory leak detection and fixes
 
 Future wish-list:
