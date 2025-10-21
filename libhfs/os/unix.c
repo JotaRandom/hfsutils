@@ -28,24 +28,9 @@
 #  include "config.h"
 # endif
 
-# ifdef HAVE_FCNTL_H
-#  include <fcntl.h>
-# else
-int open(const char *, int, ...);
-int fcntl(int, int, ...);
-# endif
-
-# ifdef HAVE_UNISTD_H
-#  include <unistd.h>
-# else
-int close(int);
-off_t lseek(int, off_t, int);
-ssize_t read(int, void *, size_t);
-ssize_t write(int, const char *, size_t);
-int stat(const char *, struct stat *);
-int fstat(int, struct stat *);
-# endif
-
+# include <fcntl.h>
+# include <unistd.h>
+# include <sys/types.h>
 # include <errno.h>
 # include <sys/stat.h>
 # include <stdint.h>

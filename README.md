@@ -14,7 +14,8 @@ This version is based on the original hfsutils by Robert Leslie (1996-1998), wit
 - Current Maintainer: Pablo Lezaeta
 - Repository: https://github.com/JotaRandom/hfsutils
 - Original Project: http://www.mars.org/home/rob/proj/hfs/
-- License: GNU General Public License, Version 2
+- License: GNU General Public License, Version 2 (see [COPYRIGHT](COPYRIGHT))
+- Changelog: See [CHANGELOG.md](CHANGELOG.md) for version history
 
 Features
 --------
@@ -63,22 +64,50 @@ sudo make install
 
 **Installation Options:**
 ```bash
-# Install just the unified hfsutil binary
+# Standard installation
 sudo make install
+
+# Custom installation prefix
+make install PREFIX=/opt/hfsutils
+
+# Package building with staging directory
+make install DESTDIR=/tmp/staging PREFIX=/usr
 
 # Install with traditional command symlinks (hls, hcopy, etc.)
 sudo make install-symlinks
+```
 
-# Create symlinks without installing (for testing)
-make symlinks
+**Build Customization:**
+```bash
+# Custom compiler and flags
+make CC=clang CFLAGS="-O3 -march=native"
+
+# Environment-based build
+export CC=gcc-11
+export CFLAGS="-O2 -g -fstack-protector-strong"
+./build.sh
+
+# Cross-compilation
+make CC=aarch64-linux-gnu-gcc CFLAGS="-O2"
 ```
 
 **Build Targets:**
-- `make` - Build hfsutil executable
-- `make symlinks` - Create traditional command symlinks
+- `make` - Build hfsutil executable and libraries
+- `make install` - Install binaries, libraries, and manual pages
+- `make install-symlinks` - Install with traditional command names
+- `make symlinks` - Create command symlinks (for testing)
 - `make test` - Run test suite
 - `make clean` - Remove built files
-- `make help` - Show all available targets
+- `make help` - Show all available targets and variables
+
+For detailed build system documentation, see [BUILD.md](BUILD.md).
+
+## Documentation
+
+- **[BUILD.md](BUILD.md)** - Comprehensive build system documentation
+- **[CHANGELOG.md](CHANGELOG.md)** - Complete version history and changes
+- **[COPYRIGHT](COPYRIGHT)** - License and copyright information
+- **[TEST_RESULTS.md](TEST_RESULTS.md)** - Build system test results
 
 Usage
 -----

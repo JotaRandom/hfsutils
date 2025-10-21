@@ -25,7 +25,10 @@ VPATH =		@srcdir@
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
-prefix =	@prefix@
+# Installation directories
+PREFIX ?=	@prefix@
+DESTDIR ?=
+prefix =	$(PREFIX)
 exec_prefix =	@exec_prefix@
 
 MANDEST =	@mandir@
@@ -36,14 +39,20 @@ LIBDEST =	@libdir@
 INSTALL =	@INSTALL@
 LIBINSTALL =	@INSTALL_DATA@
 
-CC =		@CC@
+# Build tools and flags
+CC ?=		@CC@
 INCLUDES =	@CPPFLAGS@
 DEFINES =	@DEFS@
 LIBOBJS =	@LIBOBJS@
 LIBS =		@LIBS@
 
-COPTS =		@CFLAGS@
-LDOPTS =	@LDFLAGS@
+# User-provided flags
+CFLAGS ?=	@CFLAGS@
+LDFLAGS ?=	@LDFLAGS@
+
+# Internal flags
+COPTS =		$(CFLAGS)
+LDOPTS =	$(LDFLAGS)
 
 AR =		ar rc
 RANLIB =	@RANLIB@
@@ -68,8 +77,10 @@ check :: all
 	@echo "No self-tests available."
 
 install ::
-	$(LIBINSTALL) librsrc.a "$(LIBDEST)/."
-	$(LIBINSTALL) rsrc.h "$(INCDEST)/."
+	install -d "$(DESTDIR)$(LIBDEST)"
+	install -d "$(DESTDIR)$(INCDEST)"
+	$(LIBINSTALL) librsrc.a "$(DESTDIR)$(LIBDEST)/."
+	$(LIBINSTALL) rsrc.h "$(DESTDIR)$(INCDEST)/."
 
 again :: clean all
 

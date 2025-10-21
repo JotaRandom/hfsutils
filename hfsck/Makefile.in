@@ -24,7 +24,10 @@ VPATH =		@srcdir@
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
-prefix =	@prefix@
+# Installation directories
+PREFIX ?=	@prefix@
+DESTDIR ?=
+prefix =	$(PREFIX)
 exec_prefix =	@exec_prefix@
 
 MANDEST =	@mandir@
@@ -34,22 +37,28 @@ LIBDEST =	@libdir@
 
 INSTALL =	@INSTALL@
 
-CC =		@CC@
+# Build tools and flags
+CC ?=		@CC@
 INCLUDES =	@CPPFLAGS@ -I@srcdir@/../include -I@srcdir@/../include/common -I@srcdir@/../libhfs -I@srcdir@/../src/common
 DEFINES =	@DEFS@
 LIBOBJS =	@LIBOBJS@
 LIBS =		@LIBS@ @srcdir@/../libhfs/libhfs.a
 
-COPTS =		@CFLAGS@
-LDOPTS =	@LDFLAGS@
+# User-provided flags
+CFLAGS ?=	@CFLAGS@
+LDFLAGS ?=	@LDFLAGS@
+
+# Internal flags
+COPTS =		$(CFLAGS)
+LDOPTS =	$(LDFLAGS)
 
 AR =		ar rc
 RANLIB =	@RANLIB@
 
 ### END OF USER CUSTOMIZATION #################################################
 
-CFLAGS =	$(COPTS) $(INCLUDES) $(DEFINES)
-LDFLAGS =	$(LDOPTS)
+ALL_CFLAGS =	$(COPTS) $(INCLUDES) $(DEFINES)
+ALL_LDFLAGS =	$(LDOPTS)
 
 ###############################################################################
 
@@ -63,8 +72,9 @@ HFSCKOBJS =	$(HFSCKSRCS:.c=.o) suid.o version.o
 
 all :: $(TARGETS)
 
-install ::
-	@echo "No install target for hfsck"
+install :: $(HFSCHECK)
+	install -d "$(DESTDIR)$(prefix)/sbin"
+	install -m 755 $(HFSCHECK) "$(DESTDIR)$(prefix)/sbin/"
 
 again :: clean all
 
@@ -97,26 +107,26 @@ Makefile: config.status
 config.status: .stamp/configure .stamp/config.h.in Makefile.in
 	./config.status --recheck
 
-.stamp/configure: configure.in
+.stamp/configure: configure.ac
 	autoconf && touch .stamp/configure
 
-.stamp/config.h.in: configure.in acconfig.h
+.stamp/config.h.in: configure.ac
 	autoheader && touch .stamp/config.h.in
 
 ###############################################################################
 
 $(HFSCHECK): $(HFSCKOBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(HFSCKOBJS) $(LIBS)
+	$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $@ $(HFSCKOBJS) $(LIBS)
 
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 # Common support objects from src/common
 suid.o:
-	$(CC) $(CFLAGS) -c ../src/common/suid.c -o suid.o
+	$(CC) $(ALL_CFLAGS) -c ../src/common/suid.c -o suid.o
 
 version.o:
-	$(CC) $(CFLAGS) -c ../src/common/version.c -o version.o
+	$(CC) $(ALL_CFLAGS) -c ../src/common/version.c -o version.o
 
 ###############################################################################
 

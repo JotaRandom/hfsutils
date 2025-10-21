@@ -3,7 +3,22 @@
 # HFSUtils - Simple Build Script
 # This script builds hfsutils without needing autoconf/configure
 
+# Pass through environment variables
+export CC="${CC:-gcc}"
+export CXX="${CXX:-g++}"
+export CFLAGS="${CFLAGS:--g -O2}"
+export CXXFLAGS="${CXXFLAGS:--g -O2}"
+export LDFLAGS="${LDFLAGS:-}"
+export PREFIX="${PREFIX:-/usr/local}"
+export DESTDIR="${DESTDIR:-}"
+
 echo "Building HFSUtils..."
+echo "CC=$CC"
+echo "CFLAGS=$CFLAGS"
+echo "PREFIX=$PREFIX"
+if [ -n "$DESTDIR" ]; then
+    echo "DESTDIR=$DESTDIR"
+fi
 
 # Create build directory if it doesn't exist
 mkdir -p build/obj
@@ -22,9 +37,9 @@ if [ ! -f configure ]; then
 fi
 if [ ! -f config.status ]; then
     echo "Configuring libhfs..."
-    ./configure
+    CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
 fi
-make || { echo "Failed to build libhfs"; exit 1; }
+make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || { echo "Failed to build libhfs"; exit 1; }
 cd ..
 
 # Build librsrc
@@ -36,9 +51,9 @@ if [ ! -f configure ]; then
 fi
 if [ ! -f config.status ]; then
     echo "Configuring librsrc..."
-    ./configure
+    CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
 fi
-make || { echo "Failed to build librsrc"; exit 1; }
+make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || { echo "Failed to build librsrc"; exit 1; }
 cd ..
 
 # Build hfsck
@@ -50,20 +65,24 @@ if [ ! -f configure ]; then
 fi
 if [ ! -f config.status ]; then
     echo "Configuring hfsck..."
-    ./configure
+    CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
 fi
 cd ..
 
 
 # Build main utilities
 echo "Building hfsutil..."
-make || { echo "Failed to build hfsutil"; exit 1; }
+make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" PREFIX="$PREFIX" || { echo "Failed to build hfsutil"; exit 1; }
 
 if [ -f hfsutil ]; then
     echo "Build complete! The hfsutil binary is ready."
     echo ""
     echo "To install system-wide, run:"
     echo "  sudo make install"
+    echo ""
+    echo "To install to a custom location, run:"
+    echo "  make install PREFIX=/custom/path"
+    echo "  make install DESTDIR=/staging/area"
     echo ""
     echo "To create traditional command symlinks, run:"
     echo "  sudo make install-symlinks"

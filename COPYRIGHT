@@ -1,21 +1,86 @@
+hfsutils - tools for reading and writing Macintosh HFS volumes
 
- hfsutils - tools for reading and writing Macintosh HFS volumes
- Copyright (C) 1996-1998 Robert Leslie
+Copyright Information
+=====================
 
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 2 of the License, or
- (at your option) any later version.
+Original Work:
+Copyright (C) 1996-1998 Robert Leslie
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+Modern Fork Contributors:
+Copyright (C) 2025 Brock Gunter-Smith (Apple Silicon fork)
+Copyright (C) 2025 Pablo Lezaeta (current maintainer)
 
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+License
+=======
 
- If you would like to negotiate alternate licensing terms, you may do
- so by contacting the author: Robert Leslie <rob@mars.org>
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Alternative Licensing
+====================
+
+If you would like to negotiate alternate licensing terms, you may do
+so by contacting the original author: Robert Leslie <rob@mars.org>
+
+For the modern fork, contact the current maintainer through the
+project repository: https://github.com/JotaRandom/hfsutils
+
+Full License Text
+=================
+
+The complete text of the GNU General Public License version 2 is
+available in the file COPYING included with this distribution, or
+online at: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+Third-Party Acknowledgments
+===========================
+
+This software includes code inspired by or derived from:
+
+- HFS globbing code inspired by Tcl filename globbing (John Ousterhout)
+- BinHex encoding/decoding based on BinHex 4.0 specification (Peter N Lewis)  
+- `hls' command based on GNU `ls' implementation
+- Various contributions from the community (see CREDITS file)
+
+Trademark Notice
+================
+
+Macintosh and HFS are trademarks of Apple Inc.
+This software is not affiliated with or endorsed by Apple Inc.
+
+Distribution
+============
+
+This software may be distributed under the terms of the GNU General
+Public License version 2. When distributing, you must:
+
+1. Include this copyright notice
+2. Include the complete source code or provide written offer for source
+3. Include a copy of the GNU General Public License
+4. Clearly indicate any modifications made to the original work
+
+For binary distributions, ensure all license requirements are met
+according to the GNU General Public License version 2.
+
+Contact Information
+===================
+
+Original Author: Robert Leslie <rob@mars.org>
+Original Project: http://www.mars.org/home/rob/proj/hfs/
+
+Current Project: https://github.com/JotaRandom/hfsutils
+Current Maintainer: Pablo Lezaeta
+
+For bug reports, feature requests, or contributions, please use the
+GitHub repository issue tracker and pull request system.

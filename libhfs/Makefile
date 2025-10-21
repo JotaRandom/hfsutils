@@ -25,7 +25,10 @@ src =		.
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
-prefix =	/usr/local
+# Installation directories
+PREFIX ?=	/usr/local
+DESTDIR ?=
+prefix =	$(PREFIX)
 exec_prefix =	${prefix}
 
 MANDEST =	${prefix}/share/man
@@ -39,14 +42,20 @@ SOFTLINK =	ln -s
 
 OS =		unix
 
-CC =		gcc
+# Build tools and flags
+CC ?=		gcc
 INCLUDES =	
 DEFINES =	-DHAVE_CONFIG_H
 LIBOBJS =	
 LIBS =		
 
-COPTS =		-g -O2
-LDOPTS =	
+# User-provided flags
+CFLAGS ?=	-g -O2
+LDFLAGS ?=	
+
+# Internal flags
+COPTS =		$(CFLAGS)
+LDOPTS =	$(LDFLAGS)
 
 AR =		ar rc
 RANLIB =	ranlib
@@ -72,8 +81,10 @@ check :: all
 	@echo "No self-tests available."
 
 install ::
-	$(LIBINSTALL) libhfs.a "$(LIBDEST)/."
-	$(LIBINSTALL) hfs.h "$(INCDEST)/."
+	install -d "$(DESTDIR)$(LIBDEST)"
+	install -d "$(DESTDIR)$(INCDEST)"
+	$(LIBINSTALL) libhfs.a "$(DESTDIR)$(LIBDEST)/."
+	$(LIBINSTALL) hfs.h "$(DESTDIR)$(INCDEST)/."
 
 again :: clean all
 

@@ -1,10 +1,28 @@
 # HFS Utilities for Apple Silicon
 # Builds unified hfsutil binary with all utilities
 
-CC = gcc
-CFLAGS = -g -O2 -Wall -Werror -I. -I./include -I./include/common -I./include/hfsutil -I./include/binhex -I./libhfs -I./librsrc
-LDFLAGS = -L./libhfs -L./librsrc
+# Installation directories
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+LIBDIR ?= $(PREFIX)/lib
+INCLUDEDIR ?= $(PREFIX)/include
+MANDIR ?= $(PREFIX)/share/man
+DESTDIR ?=
+
+# Build tools and flags
+CC ?= gcc
+CXX ?= g++
+CFLAGS ?= -g -O2
+CXXFLAGS ?= -g -O2
+
+# Internal flags (always applied)
+INTERNAL_CFLAGS = -Wall -Werror -I. -I./include -I./include/common -I./include/hfsutil -I./include/binhex -I./libhfs -I./librsrc
+INTERNAL_LDFLAGS = -L./libhfs -L./librsrc
 LIBS = -lhfs -lrsrc
+
+# Combined flags
+ALL_CFLAGS = $(CFLAGS) $(INTERNAL_CFLAGS)
+ALL_LDFLAGS = $(LDFLAGS) $(INTERNAL_LDFLAGS)
 
 # Build directory for object files
 BUILDDIR = build
@@ -14,7 +32,7 @@ OBJDIR = $(BUILDDIR)/obj
 $(shell mkdir -p $(OBJDIR))
 
 # Executables (symlinks to hfsutil)
-EXECUTABLES = hattrib hcd hcopy hdel hfsck hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
+EXECUTABLES = hattrib hcd hcopy hdel hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
 
 # Default target - just build hfsutil without symlinks
 all: libhfs librsrc hfsck hfsutil
@@ -24,93 +42,93 @@ symlinks: hfsutil $(EXECUTABLES) hdir
 
 # Build libraries
 libhfs:
-	$(MAKE) -C libhfs
+	$(MAKE) -C libhfs CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 
 librsrc:
-	$(MAKE) -C librsrc
+	$(MAKE) -C librsrc CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 
 hfsck:
-	$(MAKE) -C hfsck
+	$(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 
 # Object files in build directory
 $(OBJDIR)/hcwd.o: src/common/hcwd.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/suid.o: src/common/suid.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/glob.o: src/common/glob.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/version.o: src/common/version.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/charset.o: src/common/charset.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/binhex.o: src/binhex/binhex.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/copyin.o: src/common/copyin.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/copyout.o: src/common/copyout.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/crc.o: src/common/crc.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/darray.o: src/common/darray.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/dlist.o: src/common/dlist.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/dstring.o: src/common/dstring.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 # Utility object files
 $(OBJDIR)/hattrib.o: src/hfsutil/hattrib.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hcd.o: src/hfsutil/hcd.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hcopy.o: src/hfsutil/hcopy.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hdel.o: src/hfsutil/hdel.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hformat.o: src/hfsutil/hformat.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hls.o: src/hfsutil/hls.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hmkdir.o: src/hfsutil/hmkdir.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hmount.o: src/hfsutil/hmount.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hpwd.o: src/hfsutil/hpwd.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hrename.o: src/hfsutil/hrename.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hrmdir.o: src/hfsutil/hrmdir.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/humount.o: src/hfsutil/humount.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hvol.o: src/hfsutil/hvol.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/hfsutil.o: src/hfsutil/hfsutil.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 # Common objects
 COMMON_OBJS = $(OBJDIR)/hcwd.o $(OBJDIR)/suid.o $(OBJDIR)/glob.o \
@@ -127,7 +145,7 @@ UTIL_OBJS = $(OBJDIR)/hattrib.o $(OBJDIR)/hcd.o $(OBJDIR)/hcopy.o \
 
 # Build unified binary
 hfsutil: libhfs librsrc $(UTIL_OBJS) $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) $(UTIL_OBJS) $(COMMON_OBJS) $(LIBS) -o $@
+	$(CC) $(ALL_LDFLAGS) $(UTIL_OBJS) $(COMMON_OBJS) $(LIBS) -o $@
 
 # Create symlinks for individual commands
 $(EXECUTABLES): hfsutil
@@ -152,21 +170,32 @@ clean:
 	@$(MAKE) -C hfsck clean
 
 distclean: clean
-	rm -f config.h config.log config.status Makefile
+	rm -f config.h config.log config.status
 	rm -rf autom4te.cache
 	$(MAKE) -C libhfs distclean
 	$(MAKE) -C librsrc distclean
 	$(MAKE) -C hfsck distclean
 
-install: all
-	install -d $(DESTDIR)/usr/local/bin
-	install -m 755 hfsutil $(DESTDIR)/usr/local/bin/
-	@echo "Installed hfsutil to $(DESTDIR)/usr/local/bin/"
+install: all install-libs
+	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(MANDIR)/man1
+	install -m 755 hfsutil $(DESTDIR)$(BINDIR)/
+	# Install manual pages
+	for man in doc/man/*.1; do \
+		install -m 644 $$man $(DESTDIR)$(MANDIR)/man1/; \
+	done
+	@echo "Installed hfsutil to $(DESTDIR)$(BINDIR)/"
+	@echo "Installed manual pages to $(DESTDIR)$(MANDIR)/man1/"
 	@echo "You can optionally create symlinks with 'make install-symlinks'"
+
+install-libs:
+	$(MAKE) -C libhfs install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
+	$(MAKE) -C librsrc install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
+	$(MAKE) -C hfsck install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 
 install-symlinks: install
 	for prog in $(EXECUTABLES) hdir; do \
-		ln -sf hfsutil $(DESTDIR)/usr/local/bin/$$prog; \
+		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
 	done
 	@echo "Created symlinks for traditional command names"
 
@@ -181,13 +210,32 @@ help:
 	@echo "  make symlinks     - Create command symlinks (optional)"
 	@echo "  make clean        - Remove built files"
 	@echo "  make distclean    - Remove all generated files"
-	@echo "  make install      - Install hfsutil to /usr/local/bin"
+	@echo "  make install      - Install hfsutil, libraries, and manual pages"
 	@echo "  make install-symlinks - Install with traditional command names"
 	@echo "  make test         - Run test suite"
 	@echo "  make help         - Show this help"
+	@echo ""
+	@echo "Installation Variables:"
+	@echo "  PREFIX=/path      - Installation prefix (default: /usr/local)"
+	@echo "  DESTDIR=/path     - Staging directory for package building"
+	@echo "  BINDIR=/path      - Binary installation directory"
+	@echo "  LIBDIR=/path      - Library installation directory"
+	@echo "  MANDIR=/path      - Manual page installation directory"
+	@echo ""
+	@echo "Build Variables:"
+	@echo "  CC=compiler       - C compiler (default: gcc)"
+	@echo "  CXX=compiler      - C++ compiler (default: g++)"
+	@echo "  CFLAGS='flags'    - C compiler flags"
+	@echo "  CXXFLAGS='flags'  - C++ compiler flags"
+	@echo "  LDFLAGS='flags'   - Linker flags"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make install PREFIX=/opt/hfsutils"
+	@echo "  make install DESTDIR=/tmp/staging"
+	@echo "  make CC=clang CFLAGS='-O3 -march=native'"
 	@echo ""
 	@echo "The single 'hfsutil' binary contains all utilities."
 	@echo "Usage: hfsutil <command> [options]"
 	@echo "Run 'hfsutil' without arguments to see available commands."
 
-.PHONY: all symlinks clean distclean install install-symlinks test help libhfs librsrc
+.PHONY: all symlinks clean distclean install install-libs install-symlinks test help libhfs librsrc hfsck

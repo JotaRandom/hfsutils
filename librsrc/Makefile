@@ -25,7 +25,10 @@ src =		.
 
 ### USER CUSTOMIZATIONS FOLLOW ################################################
 
-prefix =	/usr/local
+# Installation directories
+PREFIX ?=	/usr/local
+DESTDIR ?=
+prefix =	$(PREFIX)
 exec_prefix =	${prefix}
 
 MANDEST =	${prefix}/share/man
@@ -36,14 +39,20 @@ LIBDEST =	${exec_prefix}/lib
 INSTALL =	/usr/bin/install -c
 LIBINSTALL =	${INSTALL} -m 644
 
-CC =		gcc
+# Build tools and flags
+CC ?=		cc
 INCLUDES =	
 DEFINES =	-DHAVE_CONFIG_H
 LIBOBJS =	
 LIBS =		
 
-COPTS =		-g -O2
-LDOPTS =	
+# User-provided flags
+CFLAGS ?=	-g -O2
+LDFLAGS ?=	
+
+# Internal flags
+COPTS =		$(CFLAGS)
+LDOPTS =	$(LDFLAGS)
 
 AR =		ar rc
 RANLIB =	ranlib
@@ -68,8 +77,10 @@ check :: all
 	@echo "No self-tests available."
 
 install ::
-	$(LIBINSTALL) librsrc.a "$(LIBDEST)/."
-	$(LIBINSTALL) rsrc.h "$(INCDEST)/."
+	install -d "$(DESTDIR)$(LIBDEST)"
+	install -d "$(DESTDIR)$(INCDEST)"
+	$(LIBINSTALL) librsrc.a "$(DESTDIR)$(LIBDEST)/."
+	$(LIBINSTALL) rsrc.h "$(DESTDIR)$(INCDEST)/."
 
 again :: clean all
 
