@@ -34,6 +34,7 @@
 # include "hfsutil.h"
 # include "suid.h"
 # include "hformat.h"
+# include "hfs_detect.h"
 
 # define O_FORCE	0x01
 
@@ -47,7 +48,13 @@ extern int optind;
 static
 void usage(void)
 {
-  fprintf(stderr, "Usage: %s [-f] [-l label] path [partition-no]\n", argv0);
+  fprintf(stderr, "Usage: %s [-f] [-l label] [-t fstype] path [partition-no]\n", argv0);
+  fprintf(stderr, "  -f          Force formatting (overwrite existing partitions)\n");
+  fprintf(stderr, "  -l label    Set volume label (default: 'Untitled')\n");
+  fprintf(stderr, "  -t fstype   Filesystem type: 'hfs' or 'hfs+' (default: hfs)\n");
+  fprintf(stderr, "\nFilesystem type can also be specified by program name:\n");
+  fprintf(stderr, "  mkfs.hfs    - Format as HFS\n");
+  fprintf(stderr, "  mkfs.hfs+   - Format as HFS+\n");
 }
 
 /*
@@ -80,14 +87,30 @@ int hformat_main(int argc, char *argv[])
   hfsvol *vol;
   hfsvolent ent;
   int nparts, partno, options = 0, result = 0;
+  const char *progname;
+  int force_fs_type = 0;  /* 0=auto/HFS, 1=HFS, 2=HFS+ */
 
   vname = "Untitled";
+
+  /* Determine program name and default filesystem type */
+  progname = strrchr(argv[0], '/');
+  if (progname == NULL)
+    progname = argv[0];
+  else
+    progname++;
+
+  /* Check if called as mkfs.hfs or mkfs.hfs+ */
+  if (strcmp(progname, "mkfs.hfs") == 0) {
+    force_fs_type = 1;  /* Force HFS */
+  } else if (strcmp(progname, "mkfs.hfs+") == 0 || strcmp(progname, "mkfs.hfsplus") == 0) {
+    force_fs_type = 2;  /* Force HFS+ */
+  }
 
   while (1)
     {
       int opt;
 
-      opt = getopt(argc, argv, "fl:");
+      opt = getopt(argc, argv, "fl:t:");
       if (opt == EOF)
 	break;
 
@@ -103,6 +126,17 @@ int hformat_main(int argc, char *argv[])
 
 	case 'l':
 	  vname = optarg;
+	  break;
+
+	case 't':
+	  if (strcmp(optarg, "hfs") == 0) {
+	    force_fs_type = 1;
+	  } else if (strcmp(optarg, "hfs+") == 0 || strcmp(optarg, "hfsplus") == 0) {
+	    force_fs_type = 2;
+	  } else {
+	    fprintf(stderr, "%s: invalid filesystem type '%s' (use 'hfs' or 'hfs+')\n", argv0, optarg);
+	    goto fail;
+	  }
 	  break;
 	}
     }
@@ -158,6 +192,16 @@ int hformat_main(int argc, char *argv[])
 	partno = 1;
     }
 
+  /* Display formatting information */
+  if (force_fs_type == 2) {
+    printf("Formatting %s as HFS+ volume '%s'...\n", path, vname);
+    /* TODO: Implement HFS+ formatting */
+    fprintf(stderr, "%s: HFS+ formatting not yet implemented\n", argv0);
+    goto fail;
+  } else {
+    printf("Formatting %s as HFS volume '%s'...\n", path, vname);
+  }
+
   vol = do_format(path, partno, 0, vname);
   if (vol == 0)
     {
@@ -167,6 +211,9 @@ int hformat_main(int argc, char *argv[])
 
   hfs_vstat(vol, &ent);
   hfsutil_pinfo(&ent);
+  
+  /* Display filesystem type information */
+  printf("Filesystem type: %s\n", (force_fs_type == 2) ? "HFS+" : "HFS");
 
   if (hcwd_mounted(ent.name, ent.crdate, path, partno) == -1)
     {

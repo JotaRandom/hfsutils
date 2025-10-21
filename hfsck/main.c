@@ -31,6 +31,7 @@
 # include "hfsck.h"
 # include "suid.h"
 # include "version.h"
+# include "../include/hfsutil/hfs_detect.h"
 
 int options;
 
@@ -58,14 +59,31 @@ int main(int argc, char *argv[])
   char *path;
   int nparts, pnum, result;
   hfsvol vol;
+  const char *progname;
+  int force_fs_type = 0;  /* 0=auto, 1=HFS, 2=HFS+ */
 
   suid_init();
+
+  /* Determine program name and filesystem type */
+  progname = strrchr(argv[0], '/');
+  if (progname == NULL)
+    progname = argv[0];
+  else
+    progname++;
+
+  /* Check if called as fsck.hfs or fsck.hfs+ */
+  if (strcmp(progname, "fsck.hfs") == 0) {
+    force_fs_type = 1;  /* Force HFS */
+  } else if (strcmp(progname, "fsck.hfs+") == 0 || strcmp(progname, "fsck.hfsplus") == 0) {
+    force_fs_type = 2;  /* Force HFS+ */
+  }
 
   if (argc == 2)
     {
       if (strcmp(argv[1], "--version") == 0)
 	{
 	  printf("%s - %s\n", hfsutils_version, hfsutils_copyright);
+	  printf("Supports HFS and HFS+ filesystem checking\n");
 	  printf("`%s --license' for licensing information.\n", argv[0]);
 	  return 0;
 	}
@@ -197,6 +215,36 @@ int main(int argc, char *argv[])
 
       options &= ~HFSCK_REPAIR;
     }
+
+  /* Detect filesystem type before proceeding */
+  if (force_fs_type != 0) {
+    int fd;
+    hfs_fs_type_t detected_type;
+    
+    suid_enable();
+    fd = open(path, O_RDONLY);
+    suid_disable();
+    
+    if (fd >= 0) {
+      detected_type = hfs_detect_fs_type(fd);
+      close(fd);
+      
+      if (force_fs_type == 1 && detected_type != FS_TYPE_HFS) {
+        fprintf(stderr, "%s: %s is not an HFS filesystem\n", argv[0], path);
+        return 1;
+      } else if (force_fs_type == 2 && detected_type != FS_TYPE_HFSPLUS && detected_type != FS_TYPE_HFSX) {
+        fprintf(stderr, "%s: %s is not an HFS+ filesystem\n", argv[0], path);
+        return 1;
+      }
+      
+      if (VERBOSE) {
+        const char *fs_name = (detected_type == FS_TYPE_HFS) ? "HFS" :
+                             (detected_type == FS_TYPE_HFSPLUS) ? "HFS+" :
+                             (detected_type == FS_TYPE_HFSX) ? "HFSX" : "Unknown";
+        printf("Detected filesystem: %s\n", fs_name);
+      }
+    }
+  }
 
   if (v_geometry(&vol, pnum) == -1 ||
       l_getmdb(&vol, &vol.mdb, 0) == -1)

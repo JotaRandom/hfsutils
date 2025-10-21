@@ -34,6 +34,10 @@ $(shell mkdir -p $(OBJDIR))
 # Executables (symlinks to hfsutil)
 EXECUTABLES = hattrib hcd hcopy hdel hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
 
+# Filesystem utilities (separate binaries with symlinks)
+FSCK_LINKS = fsck.hfs fsck.hfs+ fsck.hfsplus
+MKFS_LINKS = mkfs.hfs mkfs.hfs+ mkfs.hfsplus
+
 # Default target - just build hfsutil without symlinks
 all: libhfs librsrc hfsck hfsutil
 
@@ -64,6 +68,9 @@ $(OBJDIR)/version.o: src/common/version.c
 	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/charset.o: src/common/charset.c
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
+
+$(OBJDIR)/hfs_detect.o: src/common/hfs_detect.c
 	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 $(OBJDIR)/binhex.o: src/binhex/binhex.c
@@ -132,7 +139,8 @@ $(OBJDIR)/hfsutil.o: src/hfsutil/hfsutil.c
 
 # Common objects
 COMMON_OBJS = $(OBJDIR)/hcwd.o $(OBJDIR)/suid.o $(OBJDIR)/glob.o \
-              $(OBJDIR)/version.o $(OBJDIR)/charset.o $(OBJDIR)/binhex.o
+              $(OBJDIR)/version.o $(OBJDIR)/charset.o $(OBJDIR)/binhex.o \
+              $(OBJDIR)/hfs_detect.o
 
 # All utility objects  
 UTIL_OBJS = $(OBJDIR)/hattrib.o $(OBJDIR)/hcd.o $(OBJDIR)/hcopy.o \
@@ -197,7 +205,15 @@ install-symlinks: install
 	for prog in $(EXECUTABLES) hdir; do \
 		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
 	done
+	# Create filesystem utility symlinks
+	for prog in $(FSCK_LINKS); do \
+		ln -sf ../sbin/hfsck $(DESTDIR)$(BINDIR)/$$prog; \
+	done
+	for prog in $(MKFS_LINKS); do \
+		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
+	done
 	@echo "Created symlinks for traditional command names"
+	@echo "Created symlinks for filesystem utilities (fsck.hfs, mkfs.hfs, etc.)"
 
 test: all
 	cd test && ./generate_test_data.sh && ./run_tests.sh
@@ -237,5 +253,15 @@ help:
 	@echo "The single 'hfsutil' binary contains all utilities."
 	@echo "Usage: hfsutil <command> [options]"
 	@echo "Run 'hfsutil' without arguments to see available commands."
+	@echo ""
+	@echo "Filesystem Utilities:"
+	@echo "  hfsck           - Check/repair HFS and HFS+ filesystems"
+	@echo "  hformat         - Format HFS and HFS+ filesystems"
+	@echo ""
+	@echo "Standard Names (via symlinks):"
+	@echo "  fsck.hfs        - Check HFS filesystem"
+	@echo "  fsck.hfs+       - Check HFS+ filesystem"
+	@echo "  mkfs.hfs        - Create HFS filesystem"
+	@echo "  mkfs.hfs+       - Create HFS+ filesystem"
 
 .PHONY: all symlinks clean distclean install install-libs install-symlinks test help libhfs librsrc hfsck

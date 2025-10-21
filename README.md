@@ -134,8 +134,8 @@ hfsutil <command> [options]
 | `hrename` | Rename HFS files |
 | `hattrib` | Show/modify HFS file attributes |
 | `hvol` | Display HFS volume information |
-| `hformat` | Format HFS volumes |
-| `hfsck` | Check and repair HFS volumes |
+| `hformat` | Format HFS and HFS+ volumes |
+| `hfsck` | Check and repair HFS and HFS+ volumes |
 
 **Getting Help:**
 ```bash
@@ -145,6 +145,50 @@ hfsutil
 # Get help for a specific command
 hfsutil <command> --help
 ```
+
+## Filesystem Utilities
+
+hfsutils includes dedicated filesystem utilities that automatically detect and handle both HFS and HFS+ filesystems:
+
+### Filesystem Checking (hfsck)
+
+```bash
+# Check filesystem (auto-detects HFS/HFS+)
+hfsutil hfsck /dev/disk1s2
+
+# Check with verbose output
+hfsutil hfsck -v /dev/disk1s2
+
+# Check without repairs (read-only)
+hfsutil hfsck -n /dev/disk1s2
+
+# Standard names (via symlinks)
+fsck.hfs /dev/disk1s2      # Forces HFS checking
+fsck.hfs+ /dev/disk1s3     # Forces HFS+ checking
+```
+
+### Filesystem Formatting (hformat)
+
+```bash
+# Format as HFS (default)
+hfsutil hformat -l "My Disk" /dev/disk1s2
+
+# Format as HFS+ (when implemented)
+hfsutil hformat -t hfs+ -l "My HFS+ Disk" /dev/disk1s2
+
+# Force format (overwrite partitions)
+hfsutil hformat -f -l "New Disk" /dev/disk1
+
+# Standard names (via symlinks)
+mkfs.hfs -l "My Disk" /dev/disk1s2      # Forces HFS format
+mkfs.hfs+ -l "My Disk" /dev/disk1s2     # Forces HFS+ format
+```
+
+**Filesystem Type Detection:**
+- `hfsck` automatically detects HFS, HFS+, and HFSX filesystems
+- `hformat` defaults to HFS, with HFS+ support planned
+- Standard names (`fsck.hfs`, `mkfs.hfs+`) enforce specific filesystem types
+- All utilities handle the HFS date limit (February 6, 2040) gracefully
 
 **Basic Examples:**
 ```bash
@@ -166,6 +210,12 @@ hfsutil hcopy ./filename :filename
 # Create and format a new HFS disk image
 dd if=/dev/zero of=disk.hfs bs=1024 count=1440
 hfsutil hformat -l "My Disk" disk.hfs
+
+# Format as HFS+ (when supported)
+hfsutil hformat -t hfs+ -l "My HFS+ Disk" disk.img
+
+# Check filesystem integrity
+hfsutil hfsck -v disk.hfs
 
 # Check volume information
 hfsutil hvol
@@ -199,6 +249,12 @@ make symlinks
 hls -l
 hcopy :file ./file
 hmount disk.img
+
+# Or use standard filesystem utilities
+fsck.hfs /dev/disk1s2
+mkfs.hfs -l "My Disk" /dev/disk1s2
+fsck.hfs+ /dev/disk1s3
+mkfs.hfs+ -l "My HFS+ Disk" /dev/disk1s3
 ```
 
 Developer Libraries

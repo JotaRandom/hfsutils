@@ -128,6 +128,9 @@ suid.o:
 version.o:
 	$(CC) $(ALL_CFLAGS) -c ../src/common/version.c -o version.o
 
+hfs_detect.o:
+	$(CC) $(ALL_CFLAGS) -c ../src/common/hfs_detect.c -o hfs_detect.o
+
 ###############################################################################
 
 ### DEPENDENCIES FOLLOW #######################################################
