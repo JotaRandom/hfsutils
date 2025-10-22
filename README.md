@@ -35,6 +35,7 @@ Features
 - **C Libraries**: libhfs and librsrc for developers wanting to integrate HFS support
 - **Modern Build System**: Simplified build process without autotools dependencies
 - **Comprehensive Testing**: Full test suite for both HFS and HFS+ functionality
+- **Clean Code Organization**: Well-structured codebase with common utilities properly organized
 
 **HFS+ Support:**
 - ✅ **HFS+ Volume Creation**: Complete HFS+ formatting with proper structures

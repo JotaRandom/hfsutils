@@ -8,7 +8,7 @@
 #include <endian.h>
 #include <time.h>
 
-#include "hfsutil/hfs_detect.h"
+#include "common/hfs_detect.h"
 #include "hfsutil/hfsplus_format.h"
 
 /* Convert UTF-8 to HFS+ Unicode */

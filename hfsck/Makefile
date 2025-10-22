@@ -131,9 +131,6 @@ version.o:
 hfs_detect.o:
 	$(CC) $(ALL_CFLAGS) -c ../src/common/hfs_detect.c -o hfs_detect.o
 
-hfs_detect.o:
-	$(CC) $(ALL_CFLAGS) -c ../src/common/hfs_detect.c -o hfs_detect.o
-
 ###############################################################################
 
 ### DEPENDENCIES FOLLOW #######################################################

@@ -32,7 +32,7 @@
 # include "suid.h"
 # include "version.h"
 # include "journal.h"
-# include "../include/hfsutil/hfs_detect.h"
+# include "../include/common/hfs_detect.h"
 
 /* Standard fsck exit codes as defined by Unix/Linux/BSD systems */
 #define FSCK_OK                 0   /* No errors found */

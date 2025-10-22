@@ -17,7 +17,7 @@
 #include <time.h>
 #include <sys/stat.h>
 
-#include "../../include/hfsutil/hfs_detect.h"
+#include "../../include/common/hfs_detect.h"
 
 /*
  * NAME:    hfs_detect_fs_type()
