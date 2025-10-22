@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.1.0] - 2025-10-21
+## [4.1.0A] - 2025-10-21
 
 ### Added
 - **HFS+ Journaling Support**: Complete implementation of HFS+ journal replay and validation
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Project Status**: Updated TODO file to reflect completed features
 - **Build System**: Enhanced .gitignore for filesystem utility symlinks
 
-## [4.0.0] - 2025-10-21
+## [4.0.0] - 2025-10-21 - "Apple Silicon Fork"
 
 ### Added
 - **Modern Build System**: Complete rewrite with standard Unix build conventions

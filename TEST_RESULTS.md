@@ -61,7 +61,7 @@ make CC=gcc CFLAGS='-O3 -Wall -Wextra'
 ```
 **Result**: SUCCESS - Binary executes correctly
 ```
-HFS Utilities - hfsutils version 4.0.0 (Apple Silicon fork)
+HFS Utilities - hfsutils version 4.1.0A
 
 Usage: ./hfsutil <command> [options]
 

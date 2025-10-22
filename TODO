@@ -4,12 +4,20 @@ Copyright (C) 1996-1998 Robert Leslie
 Copyright (C) 2025 Brock Gunter-Smith
 Copyright (C) 2025 Pablo Lezaeta
 
-Modern hfsutils - Version 4.1.0
+Modern hfsutils - Version 4.1.0A
 Last updated: October 2025
 
 ===============================================================================
 
-COMPLETED FEATURES (Version 4.1.0):
+VERSION HISTORY:
+- Version 3.2.6: Original hfsutils by Robert Leslie (1996-1998)
+- Version 4.0.0: Apple Silicon fork by Brock Gunter-Smith (2025)
+- Version 4.1.0A: Extended implementation with journaling and professional standards (2025)
+- Version 5.0.0: FUTURE - Transparent mount support with standard Unix utilities
+
+===============================================================================
+
+COMPLETED FEATURES (Version 4.1.0A):
 
   ✅ HFS+ Support
   * ✅ Full HFS+ filesystem creation (mkfs.hfs+)
@@ -57,7 +65,7 @@ COMPLETED FEATURES (Version 4.1.0):
 
 ===============================================================================
 
-RECENT MAJOR ACHIEVEMENTS (Version 4.1.0):
+RECENT MAJOR ACHIEVEMENTS (Version 4.1.0A):
 
   🎉 HFS+ Journaling Implementation
   * Complete journal replay functionality for crash recovery
@@ -130,18 +138,44 @@ REMAINING TODO ITEMS:
   * memory leak detection and fixes
   * static code analysis integration
 
-Future wish-list:
+ROADMAP TO VERSION 5.0.0 - TRANSPARENT MOUNT SUPPORT:
+
+  🎯 PRIMARY GOAL: Transparent HFS/HFS+ Mount Integration
+  * Create mount.hfs and mount.hfs+ utilities for /sbin/mount.*
+  * Integration with system mount command (mount -t hfs+)
+  * Transparent access via standard Unix utilities (cp, mkdir, rm, ls, etc.)
+  * Nautilus/Finder integration for desktop environments
+  * Automatic filesystem detection and mounting
+  * Proper /etc/fstab integration
+  * User-space mounting with FUSE if needed
+
+  🎯 TECHNICAL REQUIREMENTS FOR 5.0.0:
+  * Kernel module integration OR FUSE implementation
+  * Mount helper utilities (/sbin/mount.hfs, /sbin/mount.hfs+)
+  * Proper mount options handling (-o rw,uid=1000,gid=1000,etc.)
+  * Integration with systemd/udev for automatic mounting
+  * Desktop environment integration (udisks2 support)
+  * Performance optimization for real-time access
+
+  📋 VERSION EVOLUTION SUMMARY:
+  * Version 4.0.0: "Apple Silicon fork" - Base modernization by Brock Gunter-Smith
+  * Version 4.1.0A: Extended implementation - Our current version with journaling, 
+    professional standards, comprehensive testing, and enterprise-grade features
+  * Version 5.0.0: Mount integration - The ultimate goal of transparent filesystem
+    access through standard Unix utilities and desktop file managers
+
+Future wish-list (post 5.0.0):
 
   * raw SCSI access for specialized platforms
   * partitioning utility
   * defragmenting utility
-  * ✅ HFS+ journaling support (COMPLETED in v4.1.0)
+  * ✅ HFS+ journaling support (COMPLETED in v4.1.0A)
   * Extended attributes support
   * Case-sensitive HFS+ support
   * Compression support
   * GUI utilities for desktop environments
-  * Integration with system mount utilities
   * Performance benchmarking suite
+  * Network filesystem support (NFS export of HFS+ volumes)
 
 Acknowledged limitations:
 
@@ -155,7 +189,8 @@ Acknowledged limitations:
 
 DEVELOPMENT STATUS:
 
-The project has reached a major milestone with version 4.1.0, providing:
+VERSION 4.1.0A ACHIEVEMENTS:
+The project has reached a major milestone with version 4.1.0A, providing:
 - Complete HFS+ filesystem creation and checking with journaling support
 - Unix standard utilities (mkfs.*, fsck.*) with proper exit codes
 - Modern build system with robust error handling and fallbacks
@@ -163,7 +198,7 @@ The project has reached a major milestone with version 4.1.0, providing:
 - Enterprise-grade testing and validation suites
 - Full Unix/Linux/BSD compatibility and integration
 
-PRODUCTION READINESS:
+PRODUCTION READINESS (Version 4.1.0A):
 ✅ Core functionality is stable and ready for production use
 ✅ Professional error handling and logging
 ✅ Standard exit codes for system integration
@@ -171,17 +206,31 @@ PRODUCTION READINESS:
 ✅ Enterprise-grade journaling support
 ✅ Complete documentation and examples
 
-CURRENT FOCUS:
-The project is now feature-complete for most use cases. Future development 
-focuses on performance optimizations, advanced HFS+ features, and specialized 
-use cases. The codebase is mature, well-documented, and suitable for 
-enterprise deployment.
+VERSION 5.0.0 VISION - TRANSPARENT MOUNT SUPPORT:
+🎯 ULTIMATE GOAL: Transform hfsutils into a complete filesystem solution
+   that integrates transparently with the operating system, allowing
+   users to mount HFS/HFS+ volumes and access them with standard Unix
+   utilities (cp, mkdir, rm, ls) and desktop file managers (Nautilus).
 
-QUALITY METRICS:
+TECHNICAL APPROACH FOR 5.0.0:
+- Implement mount.hfs and mount.hfs+ utilities
+- Create FUSE-based filesystem driver if kernel modules not feasible
+- Integrate with system mount infrastructure
+- Add desktop environment support (udisks2, systemd)
+- Optimize for real-time file access performance
+
+CURRENT FOCUS (Version 4.1.0A):
+The project is now feature-complete for command-line HFS/HFS+ operations.
+Version 4.1.0A represents the pinnacle of command-line HFS utilities with
+enterprise-grade features. The next major leap (5.0.0) will focus on
+transparent system integration and desktop environment support.
+
+QUALITY METRICS (Version 4.1.0A):
 - Test Coverage: Comprehensive (journaling, exit codes, integration)
 - Documentation: Professional (code comments, man pages, examples)
 - Standards Compliance: Full Unix/Linux/BSD compatibility
 - Error Handling: Enterprise-grade with proper categorization
 - Build System: Robust with automatic fallbacks
 - Code Quality: Professional with comprehensive documentation
+- Journaling Support: Complete HFS+ crash recovery implementation
 
