@@ -68,7 +68,7 @@ make install PREFIX=/usr SBINDIR=/usr/bin DESTDIR=%{buildroot}
 
 ### Binaries
 - `$(BINDIR)/hfsutil` - Main unified binary
-- `$(SBINDIR)/hfsck` - Filesystem checker
+- `$(SBINDIR)/hfsck` - Filesystem checker (properly respects SBINDIR)
 
 ### Libraries (with install-libs)
 - `$(LIBDIR)/libhfs.a` - HFS filesystem library
@@ -130,8 +130,9 @@ After packaging, verify the installation:
 # Check main binary
 /usr/bin/hfsutil --version
 
-# Check filesystem utilities
-/usr/bin/hfsck --version  # or /usr/sbin/hfsck
+# Check filesystem utilities (location depends on SBINDIR setting)
+/usr/bin/hfsck --version    # if SBINDIR=/usr/bin (merged systems)
+/usr/sbin/hfsck --version   # if SBINDIR=/usr/sbin (traditional systems)
 /usr/bin/fsck.hfs --version
 
 # Check symlinks (if installed)
