@@ -21,6 +21,7 @@ make install-symlinks PREFIX=/usr SBINDIR=/usr/bin DESTDIR="$pkgdir"
 ### Arch Linux (PKGBUILD)
 ```bash
 # In build() function
+./build.sh
 make
 
 # In package() function
