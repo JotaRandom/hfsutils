@@ -24,7 +24,7 @@
 # include "version.h"
 
 const char hfsutils_rcsid[] =
-  "hfsutils 3.3.0";
+  "hfsutils 4.1.0A";
 
 const char hfsutils_version[]   = "hfsutils version 4.1.0A";
 const char hfsutils_copyright[] = "Original Copyright (C) 1996-1998 Robert Leslie\n"

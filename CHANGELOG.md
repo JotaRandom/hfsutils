@@ -18,29 +18,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic journal replay before filesystem validation
   - Journal corruption detection and repair
   - Support for both journaled and non-journaled HFS+ volumes
-
-### Fixed
-- **Journal Write Warnings**: Fixed unused result warnings in journal operations
-
-## [4.0.1] - 2025-10-21
-
-### Added
 - **Complete Manual Pages**: Comprehensive man pages for all filesystem utilities
   - mkfs.hfs.8, mkfs.hfs+.8 - Filesystem creation utilities
   - fsck.hfs.8, fsck.hfs+.8 - Filesystem checking utilities
   - Proper symlinks for .hfsplus variants
-- **Enhanced Installation**: Section 8 manual pages installed to correct directories
-- **GitHub Integration**: Complete CI/CD workflow and Copilot instructions
-- **Updated Documentation**: Comprehensive TODO file with project status
+  - **Enhanced Installation**: Section 8 manual pages installed to correct directories
+  - **GitHub Integration**: Complete CI/CD workflow and Copilot instructions
+  - **Updated Documentation**: Comprehensive TODO file with project status
 
 ### Fixed
-- **Compilation Warnings**: Fixed setreuid/setregid unused result warnings
-- **Makefile Warnings**: Removed duplicate rules in hfsck Makefile
-- **Version Strings**: Cleaned up version information, removed "(Apple Silicon fork)"
+  - **Journal Write Warnings**: Fixed unused result warnings in journal operations
+  - **Compilation Warnings**: Fixed setreuid/setregid unused result warnings
+  - **Makefile Warnings**: Removed duplicate rules in hfsck Makefile
+  - **Version Strings**: Cleaned up version information, removed "(Apple Silicon fork) for uniformity"
 
 ### Changed
-- **Project Status**: Updated TODO file to reflect completed features
-- **Build System**: Enhanced .gitignore for filesystem utility symlinks
+  - **Project Status**: Updated TODO file to reflect completed features
+  - **Build System**: Enhanced .gitignore for filesystem utility symlinks
 
 ## [4.0.0] - 2025-10-21 - "Apple Silicon Fork"
 
