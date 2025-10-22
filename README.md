@@ -6,12 +6,12 @@ Tools for Reading and Writing Macintosh HFS Volumes
 
 hfsutils is a collection of tools for manipulating Hierarchical File System (HFS) volumes, the native format used by classic Macintosh computers. This modern port works on Linux, Unix-like systems, and BSD variants, providing a lightweight, terminal-based toolset for accessing HFS media.
 
-This version (4.1.0A) is based on the original hfsutils by Robert Leslie (1996-1998), building upon Brock Gunter-Smith's Apple Silicon fork (4.0.0) with extensive additional modernization work. The package has been restructured to remove legacy Tcl/Tk/X11 dependencies, focusing on command-line utilities and C libraries with enterprise-grade features including HFS+ journaling support.
+This version (4.1.0A.1) is based on the original hfsutils by Robert Leslie (1996-1998), building upon Brock Gunter-Smith's Apple Silicon fork (4.0.0) with extensive additional modernization work. The package has been restructured to remove legacy Tcl/Tk/X11 dependencies, focusing on command-line utilities and C libraries with enterprise-grade features including HFS+ journaling support.
 
 **Authors & Contributors:**
 - Original Author: Robert Leslie
 - Apple Silicon Fork (4.0.0): Brock Gunter-Smith  
-- Extended Version (4.1.0A): Pablo Lezaeta
+- Extended Version (4.1.0A.1): Pablo Lezaeta
 - Repository: https://github.com/JotaRandom/hfsutils
 - Original Project: http://www.mars.org/home/rob/proj/hfs/
 - License: GNU General Public License, Version 2 (see [COPYRIGHT](COPYRIGHT))
@@ -22,7 +22,7 @@ Features
 
 **Version Evolution:**
 - **Version 4.0.0**: "Apple Silicon fork" - Base modernization by Brock Gunter-Smith
-- **Version 4.1.0A**: Extended implementation with HFS+ journaling, professional standards, and enterprise-grade features
+- **Version 4.1.0A.1**: Extended implementation with HFS+ journaling, professional standards, enterprise-grade features, and flexible installation
 - **Version 5.0.0**: Future goal - Transparent mount support with standard Unix utilities
 
 - **Media Support**: Read and write HFS volumes on floppy disks, SCSI disks, CD-ROMs, Zip drives, and disk images
@@ -477,7 +477,7 @@ Project History & Acknowledgments
 
 **Modern Development:**
 - **Brock Gunter-Smith**: Apple Silicon fork (4.0.0) and initial modernization work
-- **Pablo Lezaeta**: Extended version (4.1.0A) with journaling, professional standards, and enterprise features
+- **Pablo Lezaeta**: Extended version (4.1.0A.1) with journaling, professional standards, enterprise features, and flexible installation
 - **Community Contributors**: Various patches, bug reports, and improvements
 
 **Technical Acknowledgments:**
@@ -487,6 +487,6 @@ Project History & Acknowledgments
 - Thanks to the many beta testers and contributors listed in the CREDITS file
 
 **Special Thanks:**
-This project builds upon decades of work by the original author and contributors who created a robust, portable HFS implementation. Version 4.1.0A extends the Apple Silicon fork (4.0.0) with enterprise-grade features including HFS+ journaling support, professional standards compliance, and comprehensive testing. The ultimate goal (5.0.0) is transparent filesystem mounting integration with standard Unix utilities.
+This project builds upon decades of work by the original author and contributors who created a robust, portable HFS implementation. Version 4.1.0A.1 extends the Apple Silicon fork (4.0.0) with enterprise-grade features including HFS+ journaling support, professional standards compliance, comprehensive testing, and flexible installation system for modern distributions. The ultimate goal (5.0.0) is transparent filesystem mounting integration with standard Unix utilities.
 
 For a complete list of historical contributors, see the `CREDITS` file in the repository.

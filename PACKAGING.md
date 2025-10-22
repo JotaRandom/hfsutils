@@ -52,6 +52,21 @@ make install PREFIX=/usr DESTDIR=%{buildroot}
 make install PREFIX=/usr SBINDIR=/usr/bin DESTDIR=%{buildroot}
 ```
 
+### macOS (Homebrew/MacPorts)
+```bash
+# Homebrew (typically installs to /opt/homebrew or /usr/local)
+make install PREFIX=/opt/homebrew DESTDIR="$HOMEBREW_PREFIX"
+
+# MacPorts (typically installs to /opt/local)
+make install PREFIX=/opt/local DESTDIR="$MACPORTS_PREFIX"
+
+# Traditional macOS (separate /sbin)
+make install PREFIX=/usr/local
+
+# With symlinks for compatibility
+make install-symlinks PREFIX=/usr/local
+```
+
 ## Installation Variables
 
 | Variable | Default | Description |
@@ -102,12 +117,14 @@ Many modern distributions have merged `/sbin` into `/bin`:
 For these systems, use `SBINDIR=/usr/bin` to install system utilities in the correct location.
 
 ### Traditional Systems
-Older distributions maintain separate `/sbin`:
+Older distributions and some systems maintain separate `/sbin`:
 - **RHEL/CentOS 6 and older**
 - **Debian 7 and older**
 - **Ubuntu 14.04 and older**
+- **macOS** (all versions)
+- **FreeBSD/OpenBSD/NetBSD**
 
-For these systems, use the default `SBINDIR=/usr/sbin`.
+For these systems, use the default `SBINDIR=/usr/sbin` (or appropriate prefix).
 
 ## Build Dependencies
 
@@ -156,8 +173,10 @@ Tools for reading and writing Macintosh HFS volumes. Provides utilities for moun
 
 ## Version Information
 
-Current version: **4.1.0A**
+Current version: **4.1.0A.1**
 - Extended implementation with HFS+ journaling support
 - Professional standards compliance
 - Enterprise-grade features
 - Modern build system with distribution packaging support
+- Flexible installation system for all modern distributions
+- Complete compatibility with merged and traditional filesystem layouts

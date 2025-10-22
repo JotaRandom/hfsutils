@@ -4,7 +4,7 @@ Copyright (C) 1996-1998 Robert Leslie
 Copyright (C) 2025 Brock Gunter-Smith
 Copyright (C) 2025 Pablo Lezaeta
 
-Modern hfsutils - Version 4.1.0A
+Modern hfsutils - Version 4.1.0A.1
 Last updated: October 2025
 
 ===============================================================================
@@ -12,12 +12,12 @@ Last updated: October 2025
 VERSION HISTORY:
 - Version 3.2.6: Original hfsutils by Robert Leslie (1996-1998)
 - Version 4.0.0: Apple Silicon fork by Brock Gunter-Smith (2025)
-- Version 4.1.0A: Extended implementation with journaling and professional standards (2025)
+- Version 4.1.0A.1: Extended implementation with journaling, professional standards, and flexible installation (2025)
 - Version 5.0.0: FUTURE - Transparent mount support with standard Unix utilities
 
 ===============================================================================
 
-COMPLETED FEATURES (Version 4.1.0A):
+COMPLETED FEATURES (Version 4.1.0A.1):
 
   ✅ HFS+ Support
   * ✅ Full HFS+ filesystem creation (mkfs.hfs+)
@@ -65,7 +65,7 @@ COMPLETED FEATURES (Version 4.1.0A):
 
 ===============================================================================
 
-RECENT MAJOR ACHIEVEMENTS (Version 4.1.0A):
+RECENT MAJOR ACHIEVEMENTS (Version 4.1.0A.1):
 
   🎉 HFS+ Journaling Implementation
   * Complete journal replay functionality for crash recovery
@@ -161,8 +161,8 @@ ROADMAP TO VERSION 5.0.0 - TRANSPARENT MOUNT SUPPORT:
 
   📋 VERSION EVOLUTION SUMMARY:
   * Version 4.0.0: "Apple Silicon fork" - Base modernization by Brock Gunter-Smith
-  * Version 4.1.0A: Extended implementation - Our current version with journaling, 
-    professional standards, comprehensive testing, and enterprise-grade features
+  * Version 4.1.0A.1: Extended implementation - Our current version with journaling, 
+    professional standards, comprehensive testing, enterprise-grade features, and flexible installation
   * Version 5.0.0: Mount integration - The ultimate goal of transparent filesystem
     access through standard Unix utilities and desktop file managers
 
@@ -171,7 +171,7 @@ Future wish-list (post 5.0.0):
   * raw SCSI access for specialized platforms
   * partitioning utility
   * defragmenting utility
-  * ✅ HFS+ journaling support (COMPLETED in v4.1.0A)
+  * ✅ HFS+ journaling support (COMPLETED in v4.1.0A.1)
   * Extended attributes support
   * Case-sensitive HFS+ support
   * Compression support
@@ -191,8 +191,8 @@ Acknowledged limitations:
 
 DEVELOPMENT STATUS:
 
-VERSION 4.1.0A ACHIEVEMENTS:
-The project has reached a major milestone with version 4.1.0A, providing:
+VERSION 4.1.0A.1 ACHIEVEMENTS:
+The project has reached a major milestone with version 4.1.0A.1, providing:
 - Complete HFS+ filesystem creation and checking with journaling support
 - Unix standard utilities (mkfs.*, fsck.*) with proper exit codes
 - Modern build system with robust error handling and fallbacks
@@ -200,7 +200,7 @@ The project has reached a major milestone with version 4.1.0A, providing:
 - Enterprise-grade testing and validation suites
 - Full Unix/Linux/BSD compatibility and integration
 
-PRODUCTION READINESS (Version 4.1.0A):
+PRODUCTION READINESS (Version 4.1.0A.1):
 ✅ Core functionality is stable and ready for production use
 ✅ Professional error handling and logging
 ✅ Standard exit codes for system integration
@@ -221,13 +221,13 @@ TECHNICAL APPROACH FOR 5.0.0:
 - Add desktop environment support (udisks2, systemd)
 - Optimize for real-time file access performance
 
-CURRENT FOCUS (Version 4.1.0A):
+CURRENT FOCUS (Version 4.1.0A.1):
 The project is now feature-complete for command-line HFS/HFS+ operations.
-Version 4.1.0A represents the pinnacle of command-line HFS utilities with
-enterprise-grade features. The next major leap (5.0.0) will focus on
+Version 4.1.0A.1 represents the pinnacle of command-line HFS utilities with
+enterprise-grade features and flexible installation system. The next major leap (5.0.0) will focus on
 transparent system integration and desktop environment support.
 
-QUALITY METRICS (Version 4.1.0A):
+QUALITY METRICS (Version 4.1.0A.1):
 - Test Coverage: Comprehensive (journaling, exit codes, integration)
 - Documentation: Professional (code comments, man pages, examples)
 - Standards Compliance: Full Unix/Linux/BSD compatibility
