@@ -34,8 +34,8 @@
 # include "hfsutil.h"
 # include "suid.h"
 # include "hformat.h"
-# include "hfs_detect.h"
-# include "hfsplus_format.h"
+# include "common/hfs_detect.h"
+# include "hfsutil/hfsplus_format.h"
 
 /* Standard mkfs exit codes as defined by Unix/Linux/BSD systems */
 #define MKFS_OK                 0   /* Success */
