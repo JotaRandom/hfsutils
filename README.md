@@ -78,6 +78,13 @@ make
 sudo make install
 ```
 
+**Alternative Build (if autotools issues):**
+```bash
+# Use manual build target to avoid autotools completely
+make build-manual
+sudo make install
+```
+
 **Installation Options:**
 ```bash
 # Standard installation

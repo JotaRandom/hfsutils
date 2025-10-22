@@ -32,12 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Makefile Warnings**: Removed duplicate rules in hfsck Makefile
   - **Version Strings**: Cleaned up version information, removed "(Apple Silicon fork) for uniformity"
   - **Include Path Error**: Fixed typo in hfsck/main.c include path (../nclude -> ../include)
+  - **Build System Issues**: Fixed autotools configuration problems in hfsck
+    - Fixed config.status rule to use ./configure instead of ./config.status --recheck
+    - Added robust fallback compilation when autotools fails
+    - Improved error handling in build process
 
 ### Changed
   - **Code Organization**: Moved hfs_detect.h from include/hfsutil/ to include/common/
     - Better reflects its role as common utility used by multiple components (hfsck, hformat, etc.)
     - Maintains consistent project structure with other common utilities
     - Updated all include references accordingly
+  - **Build System Improvements**: Enhanced build robustness and error handling
+    - Added build-manual target to avoid autotools when needed
+    - Improved .gitignore to use root-specific paths and avoid blocking source directories
+    - Enhanced build.sh with better fallback logic
   - **Project Status**: Updated TODO file to reflect completed features
   - **Build System**: Enhanced .gitignore for filesystem utility symlinks
 
