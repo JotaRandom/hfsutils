@@ -41,6 +41,9 @@ MKFS_LINKS = mkfs.hfs mkfs.hfs+ mkfs.hfsplus
 # Default target - just build hfsutil without symlinks
 all: libhfs librsrc hfsck hfsutil
 
+# Alternative target that avoids autotools completely
+build-manual: libhfs librsrc hfsck-manual hfsutil
+
 # Target to create symlinks for backward compatibility
 symlinks: hfsutil $(EXECUTABLES) hdir $(MKFS_LINKS) $(FSCK_LINKS)
 
@@ -52,15 +55,29 @@ librsrc:
 	$(MAKE) -C librsrc CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 
 hfsck:
-	@if ! $(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
+	@echo "Building hfsck..."
+	@if $(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
+		echo "hfsck built successfully with autotools"; \
+	else \
 		echo "Autotools build failed, building hfsck manually with journaling support..."; \
 		cd hfsck && \
 		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c *.c && \
 		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/suid.c -o suid.o && \
 		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/version.c -o version.o && \
 		$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/hfs_detect.c -o hfs_detect.o && \
-		$(CC) $(CFLAGS) -o hfsck ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o ./../libhfs/libhfs.a; \
+		$(CC) $(CFLAGS) -o hfsck ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o ./../libhfs/libhfs.a && \
+		echo "hfsck built successfully with manual compilation"; \
 	fi
+
+hfsck-manual:
+	@echo "Building hfsck manually (skipping autotools)..."
+	@cd hfsck && \
+	$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c *.c && \
+	$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/suid.c -o suid.o && \
+	$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/version.c -o version.o && \
+	$(CC) $(CFLAGS) -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c ../src/common/hfs_detect.c -o hfs_detect.o && \
+	$(CC) $(CFLAGS) -o hfsck ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o ./../libhfs/libhfs.a
+	@echo "hfsck built successfully with manual compilation"
 
 # Object files in build directory
 $(OBJDIR)/hcwd.o: src/common/hcwd.c
@@ -222,7 +239,14 @@ install: all install-libs
 install-libs:
 	$(MAKE) -C libhfs install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 	$(MAKE) -C librsrc install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
-	$(MAKE) -C hfsck install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
+	@if $(MAKE) -C hfsck install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
+		echo "hfsck installed successfully"; \
+	else \
+		echo "Installing hfsck manually..."; \
+		install -d "$(DESTDIR)$(PREFIX)/sbin"; \
+		install -m 755 hfsck/hfsck "$(DESTDIR)$(PREFIX)/sbin/"; \
+		echo "hfsck installed manually to $(DESTDIR)$(PREFIX)/sbin/"; \
+	fi
 
 install-symlinks: install
 	for prog in $(EXECUTABLES) hdir; do \
@@ -246,6 +270,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  make              - Build hfsutil executable"
+	@echo "  make build-manual - Build avoiding autotools (if configure issues)"
 	@echo "  make symlinks     - Create command symlinks (optional)"
 	@echo "  make clean        - Remove built files"
 	@echo "  make distclean    - Remove all generated files"

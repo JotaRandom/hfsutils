@@ -59,18 +59,24 @@ cd ..
 # Build hfsck with journaling support
 echo "Building hfsck..."
 cd hfsck
-if [ ! -f configure ]; then
-    echo "Error: hfsck/configure not found!"
-    exit 1
-fi
-if [ ! -f config.status ]; then
-    echo "Configuring hfsck..."
-    CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
+
+# Try autotools first, but don't fail if it doesn't work
+if [ -f configure ] && [ -f config.status ]; then
+    echo "Trying autotools build..."
+    if make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" 2>/dev/null; then
+        echo "hfsck built successfully with autotools"
+        cd ..
+        # Continue to main utilities
+    else
+        echo "Autotools build failed, falling back to manual compilation..."
+    fi
+else
+    echo "Autotools not properly configured, using manual compilation..."
 fi
 
-# Compile hfsck with journaling support manually if autotools fails
-if ! make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" 2>/dev/null; then
-    echo "Autotools build failed, building hfsck manually with journaling support..."
+# Manual compilation (either as fallback or primary method)
+if [ ! -f hfsck ]; then
+    echo "Building hfsck manually with journaling support..."
     
     # Compile all source files
     $CC $CFLAGS -I./../include -I./../include/common -I./../libhfs -I./../src/common -DHAVE_CONFIG_H -c *.c || { echo "Failed to compile hfsck sources"; exit 1; }
@@ -83,7 +89,7 @@ if ! make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" 2>/dev/null; then
     # Link hfsck with journaling support
     $CC $CFLAGS -o hfsck ck_btree.o ck_mdb.o ck_volume.o hfsck.o main.o util.o journal.o suid.o version.o hfs_detect.o ./../libhfs/libhfs.a || { echo "Failed to link hfsck"; exit 1; }
     
-    echo "hfsck built successfully with journaling support"
+    echo "hfsck built successfully with manual compilation"
 fi
 
 cd ..

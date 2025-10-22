@@ -105,7 +105,7 @@ Makefile: config.status
 	./config.status && touch .stamp/config.h
 
 config.status: .stamp/configure .stamp/config.h.in Makefile.in
-	./config.status --recheck
+	./configure
 
 .stamp/configure: configure.ac
 	autoconf && touch .stamp/configure
