@@ -29,6 +29,7 @@ PREFIX ?=	/usr/local
 DESTDIR ?=
 prefix =	$(PREFIX)
 exec_prefix =	${prefix}
+SBINDIR ?=	${prefix}/sbin
 
 MANDEST =	${prefix}/share/man
 
@@ -73,8 +74,8 @@ HFSCKOBJS =	$(HFSCKSRCS:.c=.o) suid.o version.o hfs_detect.o
 all :: $(TARGETS)
 
 install :: $(HFSCHECK)
-	install -d "$(DESTDIR)$(prefix)/sbin"
-	install -m 755 $(HFSCHECK) "$(DESTDIR)$(prefix)/sbin/"
+	install -d "$(DESTDIR)$(SBINDIR)"
+	install -m 755 $(HFSCHECK) "$(DESTDIR)$(SBINDIR)/"
 
 again :: clean all
 

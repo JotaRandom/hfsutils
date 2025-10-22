@@ -133,13 +133,15 @@ Many modern Linux distributions have merged `/sbin` into `/bin` for simplicity. 
 - **Traditional systems** (RHEL/CentOS 6, Debian 7, Ubuntu 14.04 and older): Use default settings
 - **Merged systems** (Arch Linux, Fedora 17+, Debian 8+, Ubuntu 15.04+): Use `SBINDIR=/usr/bin`
 
-The build system automatically detects merged systems and creates appropriate symlinks. System utilities like `hfsck` are installed to `SBINDIR`, while user utilities like `hfsutil` go to `BINDIR`.
+The build system automatically detects merged systems and creates appropriate symlinks. System utilities like `hfsck` are installed to `SBINDIR`, while user utilities like `hfsutil` go to `BINDIR`. All installation paths are fully configurable.
 
 **Installation Variables:**
 - `PREFIX`: Installation prefix (default: `/usr/local`)
 - `BINDIR`: User binaries directory (default: `PREFIX/bin`)
 - `SBINDIR`: System binaries directory (default: `PREFIX/sbin`)
 - `DESTDIR`: Staging directory for package building
+
+**Note**: All system utilities (`hfsck`, filesystem checkers) now properly respect the `SBINDIR` variable, ensuring correct installation paths for both traditional and merged filesystem layouts.
 
 **Build Targets:**
 - `make` - Build hfsutil executable and libraries

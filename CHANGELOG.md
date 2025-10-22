@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fixed config.status rule to use ./configure instead of ./config.status --recheck
     - Added robust fallback compilation when autotools fails
     - Improved error handling in build process
+    - Fixed hfsck installation to respect SBINDIR variable instead of hardcoded /sbin
 
 ### Changed
   - **Code Organization**: Moved hfs_detect.h from include/hfsutil/ to include/common/

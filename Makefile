@@ -62,7 +62,7 @@ librsrc:
 
 hfsck:
 	@echo "Building hfsck..."
-	@if $(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
+	@if $(MAKE) -C hfsck CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" SBINDIR="$(SBINDIR)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
 		echo "hfsck built successfully with autotools"; \
 	else \
 		echo "Autotools build failed, building hfsck manually with journaling support..."; \
@@ -216,14 +216,14 @@ clean:
 	@rm -rf $(BUILDDIR)
 	@$(MAKE) -C libhfs clean
 	@$(MAKE) -C librsrc clean
-	@$(MAKE) -C hfsck clean
+	@$(MAKE) -C hfsck clean SBINDIR="$(SBINDIR)"
 
 distclean: clean
 	rm -f config.h config.log config.status
 	rm -rf autom4te.cache
 	$(MAKE) -C libhfs distclean
 	$(MAKE) -C librsrc distclean
-	$(MAKE) -C hfsck distclean
+	$(MAKE) -C hfsck distclean SBINDIR="$(SBINDIR)"
 
 install: all install-libs
 	install -d $(DESTDIR)$(BINDIR)
@@ -247,7 +247,7 @@ install: all install-libs
 install-libs:
 	$(MAKE) -C libhfs install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
 	$(MAKE) -C librsrc install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)"
-	@if $(MAKE) -C hfsck install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
+	@if $(MAKE) -C hfsck install CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" PREFIX="$(PREFIX)" SBINDIR="$(SBINDIR)" DESTDIR="$(DESTDIR)" 2>/dev/null; then \
 		echo "hfsck installed successfully"; \
 	else \
 		echo "Installing hfsck manually..."; \
