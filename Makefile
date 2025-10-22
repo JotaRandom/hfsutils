@@ -4,10 +4,16 @@
 # Installation directories
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
+SBINDIR ?= $(PREFIX)/sbin
 LIBDIR ?= $(PREFIX)/lib
 INCLUDEDIR ?= $(PREFIX)/include
 MANDIR ?= $(PREFIX)/share/man
 DESTDIR ?=
+
+# Modern systems compatibility
+# Many distributions have merged /sbin into /bin, use SBINDIR to control this
+# For packaging: make install PREFIX=/usr SBINDIR=/usr/bin
+# For merged systems: make install SBINDIR=$(BINDIR)
 
 # Build tools and flags
 CC ?= gcc
@@ -221,6 +227,7 @@ distclean: clean
 
 install: all install-libs
 	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(SBINDIR)
 	install -d $(DESTDIR)$(MANDIR)/man1
 	install -d $(DESTDIR)$(MANDIR)/man8
 	install -m 755 hfsutil $(DESTDIR)$(BINDIR)/
@@ -234,6 +241,7 @@ install: all install-libs
 	done
 	@echo "Installed hfsutil to $(DESTDIR)$(BINDIR)/"
 	@echo "Installed manual pages to $(DESTDIR)$(MANDIR)/man1/ and $(DESTDIR)$(MANDIR)/man8/"
+	@echo "System utilities will be installed to $(DESTDIR)$(SBINDIR)/"
 	@echo "You can optionally create symlinks with 'make install-symlinks'"
 
 install-libs:
@@ -243,19 +251,27 @@ install-libs:
 		echo "hfsck installed successfully"; \
 	else \
 		echo "Installing hfsck manually..."; \
-		install -d "$(DESTDIR)$(PREFIX)/sbin"; \
-		install -m 755 hfsck/hfsck "$(DESTDIR)$(PREFIX)/sbin/"; \
-		echo "hfsck installed manually to $(DESTDIR)$(PREFIX)/sbin/"; \
+		install -d "$(DESTDIR)$(SBINDIR)"; \
+		install -m 755 hfsck/hfsck "$(DESTDIR)$(SBINDIR)/"; \
+		echo "hfsck installed manually to $(DESTDIR)$(SBINDIR)/"; \
 	fi
 
 install-symlinks: install
 	for prog in $(EXECUTABLES) hdir; do \
 		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
 	done
-	# Create filesystem utility symlinks
-	for prog in $(FSCK_LINKS); do \
-		ln -sf ../sbin/hfsck $(DESTDIR)$(BINDIR)/$$prog; \
-	done
+	# Create filesystem utility symlinks (smart path detection)
+	@if [ "$(SBINDIR)" = "$(BINDIR)" ]; then \
+		echo "Creating filesystem utility symlinks for merged /bin system..."; \
+		for prog in $(FSCK_LINKS); do \
+			ln -sf hfsck $(DESTDIR)$(BINDIR)/$$prog; \
+		done; \
+	else \
+		echo "Creating filesystem utility symlinks for separate /sbin system..."; \
+		for prog in $(FSCK_LINKS); do \
+			ln -sf ../sbin/hfsck $(DESTDIR)$(BINDIR)/$$prog; \
+		done; \
+	fi
 	for prog in $(MKFS_LINKS); do \
 		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
 	done
@@ -282,7 +298,8 @@ help:
 	@echo "Installation Variables:"
 	@echo "  PREFIX=/path      - Installation prefix (default: /usr/local)"
 	@echo "  DESTDIR=/path     - Staging directory for package building"
-	@echo "  BINDIR=/path      - Binary installation directory"
+	@echo "  BINDIR=/path      - Binary installation directory (default: PREFIX/bin)"
+	@echo "  SBINDIR=/path     - System binary directory (default: PREFIX/sbin)"
 	@echo "  LIBDIR=/path      - Library installation directory"
 	@echo "  MANDIR=/path      - Manual page installation directory"
 	@echo ""
@@ -297,6 +314,17 @@ help:
 	@echo "  make install PREFIX=/opt/hfsutils"
 	@echo "  make install DESTDIR=/tmp/staging"
 	@echo "  make CC=clang CFLAGS='-O3 -march=native'"
+	@echo ""
+	@echo "Distribution Packaging Examples:"
+	@echo "  make install PREFIX=/usr DESTDIR=/tmp/pkg"
+	@echo "  make install PREFIX=/usr SBINDIR=/usr/bin DESTDIR=/tmp/pkg  # Merged /bin systems"
+	@echo "  make install-symlinks PREFIX=/usr SBINDIR=/usr/bin         # With symlinks"
+	@echo ""
+	@echo "Modern Systems Compatibility:"
+	@echo "  Many distributions have merged /sbin into /bin. Use SBINDIR to control this:"
+	@echo "  - Traditional systems: SBINDIR=/usr/sbin (default)"
+	@echo "  - Merged systems: SBINDIR=/usr/bin"
+	@echo "  - The build system automatically detects and creates appropriate symlinks"
 	@echo ""
 	@echo "The single 'hfsutil' binary contains all utilities."
 	@echo "Usage: hfsutil <command> [options]"

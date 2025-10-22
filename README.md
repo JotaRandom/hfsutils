@@ -100,6 +100,18 @@ make install DESTDIR=/tmp/staging PREFIX=/usr
 sudo make install-symlinks
 ```
 
+**Distribution Packaging:**
+```bash
+# Standard distribution packaging
+make install PREFIX=/usr DESTDIR=/tmp/package-root
+
+# For distributions with merged /bin (like Arch, Fedora 17+)
+make install PREFIX=/usr SBINDIR=/usr/bin DESTDIR=/tmp/package-root
+
+# With symlinks for merged systems
+make install-symlinks PREFIX=/usr SBINDIR=/usr/bin DESTDIR=/tmp/package-root
+```
+
 **Build Customization:**
 ```bash
 # Custom compiler and flags
@@ -113,6 +125,21 @@ export CFLAGS="-O2 -g -fstack-protector-strong"
 # Cross-compilation
 make CC=aarch64-linux-gnu-gcc CFLAGS="-O2"
 ```
+
+**Modern Systems Compatibility:**
+
+Many modern Linux distributions have merged `/sbin` into `/bin` for simplicity. hfsutils automatically handles this:
+
+- **Traditional systems** (RHEL/CentOS 6, Debian 7, Ubuntu 14.04 and older): Use default settings
+- **Merged systems** (Arch Linux, Fedora 17+, Debian 8+, Ubuntu 15.04+): Use `SBINDIR=/usr/bin`
+
+The build system automatically detects merged systems and creates appropriate symlinks. System utilities like `hfsck` are installed to `SBINDIR`, while user utilities like `hfsutil` go to `BINDIR`.
+
+**Installation Variables:**
+- `PREFIX`: Installation prefix (default: `/usr/local`)
+- `BINDIR`: User binaries directory (default: `PREFIX/bin`)
+- `SBINDIR`: System binaries directory (default: `PREFIX/sbin`)
+- `DESTDIR`: Staging directory for package building
 
 **Build Targets:**
 - `make` - Build hfsutil executable and libraries

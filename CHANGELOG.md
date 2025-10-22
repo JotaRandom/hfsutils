@@ -46,6 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added build-manual target to avoid autotools when needed
     - Improved .gitignore to use root-specific paths and avoid blocking source directories
     - Enhanced build.sh with better fallback logic
+  - **Installation System Overhaul**: Modern distribution packaging support
+    - Added SBINDIR variable for flexible system binary placement
+    - Smart symlink creation for merged /bin systems (Arch, Fedora 17+, etc.)
+    - Proper support for distribution packaging with PREFIX=/usr
+    - Automatic detection of merged vs traditional filesystem layouts
   - **Project Status**: Updated TODO file to reflect completed features
   - **Build System**: Enhanced .gitignore for filesystem utility symlinks
 
