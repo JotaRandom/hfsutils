@@ -1,0 +1,193 @@
+# Makefile for standalone HFS utilities
+# Builds mkfs.hfs, fsck.hfs, and mount.hfs as independent utilities
+
+# Installation directories
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+SBINDIR ?= $(PREFIX)/sbin
+MANDIR ?= $(PREFIX)/share/man
+DESTDIR ?=
+
+# Build tools and flags
+CC ?= gcc
+CFLAGS ?= -g -O2 -Wall
+LDFLAGS ?=
+
+# Parallel compilation
+MAKEFLAGS += -j$(shell nproc 2>/dev/null || echo 4)
+
+# Internal flags
+INTERNAL_CFLAGS = -I. -Isrc/embedded -Isrc/embedded/shared -Iinclude -Ilibhfs
+ALL_CFLAGS = $(CFLAGS) $(INTERNAL_CFLAGS)
+
+# Build directories
+BUILDDIR = build/standalone
+OBJDIR = $(BUILDDIR)/obj
+LIBDIR = $(BUILDDIR)/lib
+
+# Ensure build directories exist
+$(shell mkdir -p $(OBJDIR)/shared $(OBJDIR)/mkfs $(OBJDIR)/fsck $(OBJDIR)/mount $(LIBDIR))
+
+# Source files
+SHARED_SOURCES = \
+	src/embedded/shared/error_utils.c \
+	src/embedded/shared/common_utils.c \
+	src/embedded/shared/device_utils.c \
+	src/embedded/shared/hfs_detect.c \
+	src/common/suid.c \
+	src/common/version.c
+
+MKFS_SOURCES = \
+	src/mkfs/mkfs_hfs_main.c \
+	src/mkfs/mkfs_hfs_format.c
+
+MKFS_SIMPLE_SOURCES = \
+	src/mkfs/mkfs_hfs_simple.c
+
+# Object files
+SHARED_OBJECTS = $(SHARED_SOURCES:src/%.c=$(OBJDIR)/%.o)
+MKFS_OBJECTS = $(MKFS_SOURCES:src/%.c=$(OBJDIR)/%.o)
+MKFS_SIMPLE_OBJECTS = $(MKFS_SIMPLE_SOURCES:src/%.c=$(OBJDIR)/%.o)
+
+# Libraries
+SHARED_LIB = $(LIBDIR)/libhfs_shared.a
+
+# Executables
+MKFS_HFS = $(BUILDDIR)/mkfs.hfs
+MKFS_HFS_SIMPLE = $(BUILDDIR)/mkfs.hfs.simple
+
+# Default target
+all: $(MKFS_HFS_SIMPLE) links
+
+# Full version (requires more dependencies)
+full: $(MKFS_HFS) links
+
+# Simple version (standalone, minimal dependencies)
+simple: $(MKFS_HFS_SIMPLE) links
+
+# Fast build (optimized for development)
+fast: CFLAGS = -O0 -g
+fast: $(MKFS_HFS_SIMPLE) links
+
+# Build shared library
+$(SHARED_LIB): $(SHARED_OBJECTS)
+	@echo "Creating shared library: $@"
+	@ar rcs $@ $^
+
+# Build simple mkfs.hfs (recommended for testing)
+$(MKFS_HFS_SIMPLE): $(MKFS_SIMPLE_OBJECTS)
+	@echo "Building simple mkfs.hfs: $@"
+	@$(CC) $(ALL_CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Build full mkfs.hfs (requires libhfs integration)
+$(MKFS_HFS): $(MKFS_OBJECTS) $(SHARED_LIB)
+	@echo "Building full mkfs.hfs: $@"
+	@$(CC) $(ALL_CFLAGS) -o $@ $(MKFS_OBJECTS) $(SHARED_LIB) $(LDFLAGS)
+
+# Object file compilation rules
+$(OBJDIR)/%.o: src/%.c
+	@mkdir -p $(dir $@)
+	@echo "Compiling: $<"
+	@$(CC) $(ALL_CFLAGS) -c $< -o $@
+
+# Create symbolic links for different program names
+links: $(MKFS_HFS_SIMPLE)
+	@echo "Creating symbolic links..."
+	@cd $(BUILDDIR) && \
+	cp mkfs.hfs.simple mkfs.hfs && \
+	cp mkfs.hfs mkfs.hfs+ && \
+	cp mkfs.hfs mkfs.hfsplus
+
+# Test target
+test: $(MKFS_HFS_SIMPLE) links
+	@echo "Running tests..."
+	@bash src/mkfs/test_mkfs.sh
+
+# Comprehensive test target
+test-comprehensive: $(MKFS_HFS_SIMPLE) links
+	@echo "Running comprehensive tests..."
+	@bash src/mkfs/test_mkfs_comprehensive.sh
+
+# Quick test target
+test-quick: $(MKFS_HFS_SIMPLE) links
+	@echo "Running quick tests..."
+	@bash src/mkfs/test_mkfs.sh
+
+# Install targets
+install: install-simple
+
+install-simple: $(MKFS_HFS_SIMPLE) links
+	@echo "Installing mkfs.hfs utilities..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -m 755 $(BUILDDIR)/mkfs.hfs $(DESTDIR)$(SBINDIR)/
+	ln -sf mkfs.hfs $(DESTDIR)$(SBINDIR)/mkfs.hfs+
+	ln -sf mkfs.hfs $(DESTDIR)$(SBINDIR)/mkfs.hfsplus
+
+install-full: $(MKFS_HFS) links
+	@echo "Installing full mkfs.hfs utilities..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -m 755 $(BUILDDIR)/mkfs.hfs $(DESTDIR)$(SBINDIR)/
+	ln -sf mkfs.hfs $(DESTDIR)$(SBINDIR)/mkfs.hfs+
+	ln -sf mkfs.hfs $(DESTDIR)$(SBINDIR)/mkfs.hfsplus
+
+# Uninstall
+uninstall:
+	@echo "Uninstalling mkfs.hfs utilities..."
+	rm -f $(DESTDIR)$(SBINDIR)/mkfs.hfs
+	rm -f $(DESTDIR)$(SBINDIR)/mkfs.hfs+
+	rm -f $(DESTDIR)$(SBINDIR)/mkfs.hfsplus
+
+# Clean targets
+clean:
+	@echo "Cleaning build artifacts..."
+	rm -rf $(BUILDDIR)
+
+distclean: clean
+	@echo "Cleaning all generated files..."
+	rm -f config.log config.status
+	rm -rf autom4te.cache
+
+# Development targets
+debug: CFLAGS += -DDEBUG -g3 -O0
+debug: $(MKFS_HFS_SIMPLE) links
+
+release: CFLAGS += -DNDEBUG -O3 -s
+release: $(MKFS_HFS_SIMPLE) links
+
+# Check for common issues
+check:
+	@echo "Checking for common issues..."
+	@if ! command -v gcc >/dev/null 2>&1; then \
+		echo "Error: gcc not found. Please install build tools."; \
+		exit 1; \
+	fi
+	@echo "Build environment OK"
+
+# Show build information
+info:
+	@echo "Build Configuration:"
+	@echo "  CC:           $(CC)"
+	@echo "  CFLAGS:       $(CFLAGS)"
+	@echo "  ALL_CFLAGS:   $(ALL_CFLAGS)"
+	@echo "  LDFLAGS:      $(LDFLAGS)"
+	@echo "  PREFIX:       $(PREFIX)"
+	@echo "  SBINDIR:      $(SBINDIR)"
+	@echo "  BUILDDIR:     $(BUILDDIR)"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all           Build simple version (default)"
+	@echo "  simple        Build simple standalone version"
+	@echo "  full          Build full version with libhfs"
+	@echo "  test          Run test suite"
+	@echo "  install       Install utilities"
+	@echo "  clean         Clean build artifacts"
+	@echo "  check         Check build environment"
+
+# Dependencies
+$(MKFS_OBJECTS): src/embedded/mkfs/mkfs_hfs.h
+$(SHARED_OBJECTS): src/embedded/shared/*.h include/common/*.h
+
+.PHONY: all full simple links test install install-simple install-full uninstall clean distclean debug release check info
+
+# Help target
+help: info
