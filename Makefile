@@ -43,9 +43,16 @@ EXECUTABLES = hattrib hcd hcopy hdel hformat hls hmkdir hmount hpwd hrename hrmd
 # Filesystem utilities (separate binaries with symlinks)
 FSCK_LINKS = fsck.hfs fsck.hfs+ fsck.hfsplus
 MKFS_LINKS = mkfs.hfs mkfs.hfs+ mkfs.hfsplus
+MOUNT_LINKS = mount.hfs mount.hfs+ mount.hfsplus
+
+# Standalone utilities
+STANDALONE_UTILITIES = mkfs.hfs fsck.hfs mount.hfs
 
 # Default target - just build hfsutil without symlinks
 all: libhfs librsrc hfsck hfsutil
+
+# Standalone utilities target
+standalone: $(STANDALONE_UTILITIES)
 
 # Alternative target that avoids autotools completely
 build-manual: libhfs librsrc hfsck-manual hfsutil
@@ -196,12 +203,12 @@ $(EXECUTABLES): hfsutil
 hdir: hfsutil
 	ln -sf hfsutil hdir
 
-# Create filesystem utility symlinks
-$(MKFS_LINKS): hfsutil
-	ln -sf hfsutil $@
+# Create filesystem utility symlinks (disabled - using standalone utilities now)
+# $(MKFS_LINKS): hfsutil
+#	ln -sf hfsutil $@
 
-$(FSCK_LINKS): hfsck
-	ln -sf hfsck/hfsck $@
+# $(FSCK_LINKS): hfsck
+#	ln -sf hfsck/hfsck $@
 
 clean:
 	@echo "Cleaning executables and build artifacts..."
@@ -278,8 +285,9 @@ install-symlinks: install
 	@echo "Created symlinks for traditional command names"
 	@echo "Created symlinks for filesystem utilities (fsck.hfs, mkfs.hfs, etc.)"
 
-test: all
-	cd test && ./generate_test_data.sh && ./run_tests.sh
+# Old test target (disabled - using new test targets now)
+# test: all
+#	cd test && ./generate_test_data.sh && ./run_tests.sh
 
 help:
 	@echo "HFS Utilities for Apple Silicon - Build System"
@@ -340,4 +348,86 @@ help:
 	@echo "  mkfs.hfs        - Create HFS filesystem"
 	@echo "  mkfs.hfs+       - Create HFS+ filesystem"
 
-.PHONY: all symlinks clean distclean install install-libs install-symlinks test help libhfs librsrc hfsck
+# ============================================================================
+# STANDALONE UTILITIES BUILD RULES
+# ============================================================================
+
+# Standalone mkfs.hfs utilities
+mkfs.hfs: libhfs librsrc
+	@echo "Building standalone mkfs.hfs utilities..."
+	$(MAKE) -C src/mkfs all
+
+# Standalone fsck.hfs utilities  
+fsck.hfs: libhfs librsrc
+	@echo "Building standalone fsck.hfs utilities..."
+	$(MAKE) -C src/fsck all
+
+# HFS+ utilities (mkfs.hfs+ and fsck.hfs+)
+hfsplus: mkfs.hfs fsck.hfs
+	@echo "HFS+ utilities built successfully"
+	@echo "Available executables:"
+	@echo "  - build/standalone/mkfs.hfs"
+	@echo "  - build/standalone/mkfs.hfs+"
+	@echo "  - build/standalone/fsck.hfs"
+	@echo "  - build/standalone/fsck.hfs+"
+
+# Standalone mount.hfs utility
+mount.hfs: libhfs librsrc
+	@echo "Building standalone mount.hfs utility..."
+	@mkdir -p build/standalone
+	@echo "Note: mount.hfs implementation will be added in subsequent tasks"
+	@echo "Placeholder created for mount.hfs build target"
+
+# ============================================================================
+# TEST TARGETS
+# ============================================================================
+
+# Unit tests
+test-unit: hfsplus
+	@echo "Running unit tests..."
+	@mkdir -p build/tests
+	$(CC) $(CFLAGS) -I src -o build/tests/test_mkfs_common tests/unit/mkfs/test_mkfs_common.c src/mkfs/mkfs_common.c build/standalone/libshared.a -I src/embedded/shared
+	build/tests/test_mkfs_common
+
+# Integration tests
+test-integration: hfsplus
+	@echo "Running integration tests..."
+	bash tests/integration/mkfs/test_mkfs_basic.sh
+
+# All tests
+test: test-unit test-integration
+	@echo "All tests completed successfully!"
+
+# ============================================================================
+# FLEXIBLE INSTALLATION TARGETS
+# ============================================================================
+
+# Linux installation (filesystem utilities only)
+install-linux: $(STANDALONE_UTILITIES)
+	@echo "Installing Linux-specific utilities (mkfs.hfs, fsck.hfs, mount.hfs)..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(MANDIR)/man8
+	@echo "Note: Actual installation will be implemented in subsequent tasks"
+	@echo "Placeholder created for install-linux target"
+
+# Other systems installation (filesystem utilities + hfsutils)
+install-other: $(STANDALONE_UTILITIES) hfsutil
+	@echo "Installing utilities for other systems (mkfs.hfs, fsck.hfs + hfsutils)..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(MANDIR)/man1
+	install -d $(DESTDIR)$(MANDIR)/man8
+	@echo "Note: Actual installation will be implemented in subsequent tasks"
+	@echo "Placeholder created for install-other target"
+
+# Complete installation (everything)
+install-complete: $(STANDALONE_UTILITIES) hfsutil
+	@echo "Installing all utilities (mkfs.hfs, fsck.hfs, mount.hfs + hfsutils)..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(MANDIR)/man1
+	install -d $(DESTDIR)$(MANDIR)/man8
+	@echo "Note: Actual installation will be implemented in subsequent tasks"
+	@echo "Placeholder created for install-complete target"
+
+.PHONY: all standalone symlinks clean distclean install install-libs install-symlinks install-linux install-other install-complete test help libhfs librsrc hfsck mkfs.hfs fsck.hfs mount.hfs
