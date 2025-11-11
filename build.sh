@@ -99,6 +99,10 @@ cd ..
 echo "Building hfsutil..."
 make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" PREFIX="$PREFIX" || { echo "Failed to build hfsutil"; exit 1; }
 
+# Build standalone mkfs utilities
+echo "Building standalone mkfs.hfs and mkfs.hfs+ utilities..."
+make -C src/mkfs all CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || { echo "Failed to build mkfs utilities"; exit 1; }
+
 if [ -f hfsutil ]; then
     echo "Build complete! The hfsutil binary is ready."
     echo ""

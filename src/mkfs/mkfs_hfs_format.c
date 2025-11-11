@@ -809,9 +809,9 @@ static int format_hfs_volume(const char *device_path, int partno,
         goto cleanup;
     }
     
-    /* 6. Write alternate Master Directory Block (last block) */
+    /* 6. Write alternate Master Directory Block (1024 bytes before end, per TN1150) */
     error_verbose("writing alternate master directory block");
-    if (lseek(fd, (params->total_sectors - 1) * params->sector_size, SEEK_SET) == -1) {
+    if (lseek(fd, params->device_size - 1024, SEEK_SET) == -1) {
         error_print_errno("failed to seek to alternate MDB location");
         goto cleanup;
     }
@@ -1063,9 +1063,9 @@ static int format_hfsplus_volume(const char *device_path, int partno,
         goto cleanup;
     }
     
-    /* 6. Write alternate Volume Header (last block) */
+    /* 6. Write alternate Volume Header (1024 bytes before end, per TN1150) */
     error_verbose("writing alternate volume header");
-    if (lseek(fd, (params->total_sectors - 1) * params->sector_size, SEEK_SET) == -1) {
+    if (lseek(fd, params->device_size - 1024, SEEK_SET) == -1) {
         error_print_errno("failed to seek to alternate volume header location");
         goto cleanup;
     }
@@ -1154,8 +1154,8 @@ static int write_hfsplus_volume_header(int fd, const hfsplus_volume_params_t *pa
     vh_block[2] = 0x00;
     vh_block[3] = 0x04;
     
-    /* attributes: volume attributes */
-    uint32_t attributes = 0;
+    /* attributes: volume attributes (TN1150 kHFSVolumeUnmountedBit=0x0100 at bit 8) */
+    uint32_t attributes = 0x00000100;  /* bit 8: volume unmounted cleanly */
     if (params->enable_journaling) {
         attributes |= 0x00002000;  /* kHFSVolumeJournaledMask */
     }
@@ -1231,7 +1231,21 @@ static int write_hfsplus_volume_header(int fd, const hfsplus_volume_params_t *pa
     vh_block[54] = (next_alloc >> 8) & 0xFF;
     vh_block[55] = next_alloc & 0xFF;
     
-    /* nextCatalogID: Next catalog node ID (start at 16) */
+    /* rsrcClumpSize: Default resource fork clump size (offset +56) */
+    uint32_t rsrc_clump = params->block_size * 4;  /* 4 blocks default */
+    vh_block[56] = (rsrc_clump >> 24) & 0xFF;
+    vh_block[57] = (rsrc_clump >> 16) & 0xFF;
+    vh_block[58] = (rsrc_clump >> 8) & 0xFF;
+    vh_block[59] = rsrc_clump & 0xFF;
+    
+    /* dataClumpSize: Default data fork clump size (offset +60) */
+    uint32_t data_clump = params->block_size * 4;  /* 4 blocks default */
+    vh_block[60] = (data_clump >> 24) & 0xFF;
+    vh_block[61] = (data_clump >> 16) & 0xFF;
+    vh_block[62] = (data_clump >> 8) & 0xFF;
+    vh_block[63] = data_clump & 0xFF;
+    
+    /* nextCatalogID: Next catalog node ID (start at 16, offset +64, per TN1150) */
     vh_block[64] = 0x00;
     vh_block[65] = 0x00;
     vh_block[66] = 0x00;

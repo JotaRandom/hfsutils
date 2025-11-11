@@ -27,32 +27,84 @@ TEST_DATA_DIR="$SCRIPT_DIR/data"
 TEST_TEMP_DIR="$SCRIPT_DIR/temp"
 UTILS_DIR="$PROJECT_ROOT"
 
-# Utility paths - using unified binary
+# Utility paths - detect what's available
 HFSUTIL="$UTILS_DIR/hfsutil"
 HFSCK="$UTILS_DIR/hfsck/hfsck"
 
-# Create symlinks for compatibility if they don't exist
-create_symlinks() {
-    local utils="hattrib hcd hcopy hdel hdir hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol"
-    for util in $utils; do
-        if [ ! -L "$UTILS_DIR/$util" ]; then
-            ln -sf hfsutil "$UTILS_DIR/$util"
-        fi
-    done
+# Detect standalone utilities or use hfsutil
+detect_utilities() {
+    # Check for standalone mkfs utilities first
+    if [ -f "$UTILS_DIR/build/standalone/mkfs.hfs" ]; then
+        MKFS_HFS="$UTILS_DIR/build/standalone/mkfs.hfs"
+        echo "[INFO] Using standalone mkfs.hfs"
+    elif [ -f "$UTILS_DIR/mkfs.hfs" ] && [ ! -L "$UTILS_DIR/mkfs.hfs" ]; then
+        MKFS_HFS="$UTILS_DIR/mkfs.hfs"
+        echo "[INFO] Using installed mkfs.hfs"
+    elif [ -f "$HFSUTIL" ]; then
+        MKFS_HFS="$HFSUTIL"
+        echo "[INFO] Using hfsutil for mkfs.hfs functionality"
+    else
+        echo "[WARN] mkfs.hfs not found"
+        MKFS_HFS=""
+    fi
     
-    # Create filesystem utility symlinks
-    if [ ! -L "$UTILS_DIR/mkfs.hfs" ]; then
-        ln -sf hfsutil "$UTILS_DIR/mkfs.hfs"
+    if [ -f "$UTILS_DIR/build/standalone/mkfs.hfs+" ]; then
+        MKFS_HFSPLUS="$UTILS_DIR/build/standalone/mkfs.hfs+"
+        echo "[INFO] Using standalone mkfs.hfs+"
+    elif [ -f "$UTILS_DIR/mkfs.hfs+" ] && [ ! -L "$UTILS_DIR/mkfs.hfs+" ]; then
+        MKFS_HFSPLUS="$UTILS_DIR/mkfs.hfs+"
+        echo "[INFO] Using installed mkfs.hfs+"
+    elif [ -f "$HFSUTIL" ]; then
+        MKFS_HFSPLUS="$HFSUTIL"
+        echo "[INFO] Using hfsutil for mkfs.hfs+ functionality"
+    else
+        echo "[WARN] mkfs.hfs+ not found"
+        MKFS_HFSPLUS=""
     fi
-    if [ ! -L "$UTILS_DIR/mkfs.hfs+" ]; then
-        ln -sf hfsutil "$UTILS_DIR/mkfs.hfs+"
+    
+    # Check for standalone fsck utilities
+    if [ -f "$UTILS_DIR/build/standalone/fsck.hfs" ]; then
+        FSCK_HFS="$UTILS_DIR/build/standalone/fsck.hfs"
+        echo "[INFO] Using standalone fsck.hfs"
+    elif [ -f "$UTILS_DIR/fsck.hfs" ] && [ ! -L "$UTILS_DIR/fsck.hfs" ]; then
+        FSCK_HFS="$UTILS_DIR/fsck.hfs"
+        echo "[INFO] Using installed fsck.hfs"
+    elif [ -f "$HFSCK" ]; then
+        FSCK_HFS="$HFSCK"
+        echo "[INFO] Using hfsck for fsck.hfs functionality"
+    else
+        echo "[WARN] fsck.hfs not found"
+        FSCK_HFS=""
     fi
-    if [ ! -L "$UTILS_DIR/fsck.hfs+" ]; then
-        ln -sf hfsck/hfsck "$UTILS_DIR/fsck.hfs+"
+    
+    if [ -f "$UTILS_DIR/build/standalone/fsck.hfs+" ]; then
+        FSCK_HFSPLUS="$UTILS_DIR/build/standalone/fsck.hfs+"
+        echo "[INFO] Using standalone fsck.hfs+"
+    elif [ -f "$UTILS_DIR/fsck.hfs+" ] && [ ! -L "$UTILS_DIR/fsck.hfs+" ]; then
+        FSCK_HFSPLUS="$UTILS_DIR/fsck.hfs+"
+        echo "[INFO] Using installed fsck.hfs+"
+    elif [ -f "$HFSCK" ]; then
+        FSCK_HFSPLUS="$HFSCK"
+        echo "[INFO] Using hfsck for fsck.hfs+ functionality"
+    else
+        echo "[WARN] fsck.hfs+ not found"
+        FSCK_HFSPLUS=""
     fi
 }
 
-create_symlinks
+# Create symlinks for hfsutil commands if hfsutil exists
+create_symlinks() {
+    if [ ! -f "$HFSUTIL" ]; then
+        return
+    fi
+    
+    local utils="hattrib hcd hcopy hdel hdir hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol"
+    for util in $utils; do
+        if [ ! -L "$UTILS_DIR/$util" ] && [ ! -f "$UTILS_DIR/$util" ]; then
+            ln -sf hfsutil "$UTILS_DIR/$util"
+        fi
+    done
+}
 
 HATTRIB="$UTILS_DIR/hattrib"
 HCD="$UTILS_DIR/hcd"
@@ -68,9 +120,6 @@ HRENAME="$UTILS_DIR/hrename"
 HRMDIR="$UTILS_DIR/hrmdir"
 HUMOUNT="$UTILS_DIR/humount"
 HVOL="$UTILS_DIR/hvol"
-MKFS_HFS="$UTILS_DIR/mkfs.hfs"
-MKFS_HFSPLUS="$UTILS_DIR/mkfs.hfs+"
-FSCK_HFSPLUS="$UTILS_DIR/fsck.hfs+"
 
 # Test configuration
 CLEANUP_ON_SUCCESS=1
@@ -97,6 +146,10 @@ warning() {
     echo -e "${YELLOW}[WARN]${NC} $*"
 }
 
+# Now detect utilities and create symlinks after helper functions are defined
+detect_utilities
+create_symlinks
+
 # Test execution wrapper
 run_test() {
     local test_name="$1"
@@ -106,10 +159,21 @@ run_test() {
     log "Running test: $test_name"
     TESTS_RUN=$((TESTS_RUN + 1))
     
+    # Reset assertion failure flag
+    TEST_ASSERTION_FAILED=0
+    
     if $test_function; then
-        success "$test_name"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        return 0
+        # Check if any assertion failed during the test
+        if [[ $TEST_ASSERTION_FAILED -eq 1 ]]; then
+            error "$test_name"
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            FAILED_TESTS+=("$test_name")
+            return 1
+        else
+            success "$test_name"
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            return 0
+        fi
     else
         error "$test_name"
         TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -150,6 +214,7 @@ assert_success() {
         if [[ -n "$output" ]] && [[ $VERBOSE -eq 1 ]]; then
             echo "  Output: $output" >&2
         fi
+        TEST_ASSERTION_FAILED=1
         return 1
     fi
 }
@@ -165,6 +230,7 @@ assert_failure() {
     
     if eval "$cmd" >/dev/null 2>&1; then
         error "Command unexpectedly succeeded: $cmd"
+        TEST_ASSERTION_FAILED=1
         return 1
     else
         local actual_rc=$?
@@ -182,6 +248,7 @@ assert_file_exists() {
     local file="$1"
     if [[ ! -f "$file" ]]; then
         error "File does not exist: $file"
+        TEST_ASSERTION_FAILED=1
         return 1
     fi
     return 0
@@ -191,7 +258,8 @@ assert_file_exists() {
 assert_file_not_exists() {
     local file="$1"
     if [[ -f "$file" ]]; then
-        error "File unexpectedly exists: $file"
+        error "File should not exist: $file"
+        TEST_ASSERTION_FAILED=1
         return 1
     fi
     return 0
@@ -218,6 +286,7 @@ assert_output_contains() {
         return 0
     else
         error "Output does not contain '$expected': $output"
+        TEST_ASSERTION_FAILED=1
         return 1
     fi
 }

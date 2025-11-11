@@ -55,6 +55,7 @@ libhfs/config.h
 libhfs/config.log
 libhfs/config.status
 libhfs/os.c
+libhfs/Makefile
 lib/libhfs/config.h
 lib/libhfs/config.log
 lib/libhfs/config.status
@@ -65,9 +66,11 @@ lib/librsrc/config.status
 librsrc/config.h
 librsrc/config.log
 librsrc/config.status
+librsrc/Makefile
 hfsck/.config.h
 hfsck/config.log
 hfsck/config.status
+hfsck/Makefile
 linux/Makefile
 
 # Test data and temporary files
@@ -82,9 +85,19 @@ test/test_file.txt
 test/project.txt
 test/hello.c
 
+# Test images in root (should be in test/)
+*.img
+test_*.img
+test_hfs_spec.img
+test_hfsplus_spec.img
+
 # Test artifacts
 *.log
 commit_message*.txt
+build_output.log
+test_output.txt
+validation.txt
+validation_output.txt
 
 # mkfs test artifacts
 /tmp/hfs_test_*
@@ -135,9 +148,17 @@ hfsck/hfsck
 # IDE files
 .vscode/
 .idea/
+.vs/
 *.xcodeproj/
 *.xcworkspace/
 
 # Temporary test files and directories
 /tmp/test_debug/
 /tmp/simple_test_*/
+
+# Temporary documentation and summary files (consolidated in doc/)
+*_SUMMARY.md
+CORRECCION.md
+ENTREGABLES.md
+RESUMEN_FINAL.md
+TEST_RESULTS.md

@@ -38,14 +38,16 @@ Features
 - **Clean Code Organization**: Well-structured codebase with common utilities properly organized
 
 **HFS+ Support:**
-- ✅ **HFS+ Volume Creation**: Complete HFS+ formatting with proper structures
+- ✅ **HFS+ Volume Creation**: Complete HFS+ formatting with proper structures conforming to Apple TN1150
 - ✅ **Standard Unix Utilities**: mkfs.hfs, mkfs.hfs+, fsck.hfs+ commands
 - ✅ **Filesystem Detection**: Automatic HFS vs HFS+ type detection
 - ✅ **Program Name Detection**: Utilities behave based on invocation name
+- ✅ **Specification Conformance**: Alternate headers, Volume Header fields, proper signatures
 - 🔄 **Full HFS+ Operations**: B-tree initialization and mounting (planned)
 
 **Current Limitations:**
-- HFS+ volumes can be created but not yet mounted with hfsutils (use system tools)
+- HFS+ volumes can be created but not yet fully mounted with hfsutil (use system tools)
+- Known issue: B-tree compatibility between mkfs.hfs and hfsutil (under investigation)
 - Macintosh File System (MFS) for 400K floppies is not supported
 - Some 800K floppies may have hardware-related limitations (disk images work fine)
 
@@ -186,10 +188,20 @@ cd test && ./run_tests.sh
 
 ## Documentation
 
+### User Documentation
 - **[BUILD.md](BUILD.md)** - Comprehensive build system documentation
 - **[CHANGELOG.md](CHANGELOG.md)** - Complete version history and changes
 - **[COPYRIGHT](COPYRIGHT)** - License and copyright information
-- **[TEST_RESULTS.md](TEST_RESULTS.md)** - Build system test results
+- **[PACKAGING.md](PACKAGING.md)** - Distribution packaging guidelines
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Project organization
+
+### Technical Documentation (./doc/)
+- **[TN1150_HFS_PLUS_VOLUME_FORMAT.md](doc/TN1150_HFS_PLUS_VOLUME_FORMAT.md)** - Apple's official HFS+ specification
+- **[HFS_CLASSIC_SPECIFICATION.md](doc/HFS_CLASSIC_SPECIFICATION.md)** - HFS Classic complete specification
+- **[WIKIPEDIA_HFS_PLUS.md](doc/WIKIPEDIA_HFS_PLUS.md)** - Wikipedia reference for HFS+
+- **[HFS_IMPLEMENTATION_NOTES.md](doc/HFS_IMPLEMENTATION_NOTES.md)** - Practical implementation guide
+- **[DEVELOPMENT_HISTORY.md](doc/DEVELOPMENT_HISTORY.md)** - Project evolution and lessons learned
+- **[README.md](doc/README.md)** - Documentation index and quick reference
 
 Usage
 -----

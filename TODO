@@ -5,7 +5,7 @@ Copyright (C) 2025 Brock Gunter-Smith
 Copyright (C) 2025 Pablo Lezaeta
 
 Modern hfsutils - Version 4.1.0A.1
-Last updated: October 2025
+Last updated: November 2025
 
 ===============================================================================
 
@@ -48,6 +48,10 @@ COMPLETED FEATURES (Version 4.1.0A.1):
   * ✅ GitHub Copilot development instructions
   * ✅ Comprehensive build and installation documentation
   * ✅ Professional code documentation with NAME/DESCRIPTION/PARAMETERS format
+  * ✅ Offline technical specifications (Apple TN1150, HFS Classic, Wikipedia)
+  * ✅ Implementation guide with practical examples and validation
+  * ✅ Development history and lessons learned documentation
+  * ✅ Organized documentation structure (./doc/ directory)
 
   ✅ Professional Standards Compliance
   * ✅ Unix/Linux/BSD standard exit codes (fsck: 0,1,2,4,8,16,32,128; mkfs: 0,1,2,4,8)
@@ -55,6 +59,10 @@ COMPLETED FEATURES (Version 4.1.0A.1):
   * ✅ Comprehensive usage messages with examples and exit code documentation
   * ✅ Professional error handling and categorization
   * ✅ Enterprise-grade logging with timestamps and proper categorization
+  * ✅ Specification conformance (Apple TN1150 for HFS+, HFS Classic spec)
+  * ✅ Alternate header location fixes (file_size - 1024 for both HFS and HFS+)
+  * ✅ Volume Header field alignment corrections (rsrcClumpSize, dataClumpSize, nextCatalogID)
+  * ✅ Proper unmounted bit setting (kHFSVolumeUnmountedBit = 0x0100)
 
   ✅ Advanced Testing Infrastructure
   * ✅ HFS+ journaling test suite (test/test_journaling.sh)
@@ -66,6 +74,14 @@ COMPLETED FEATURES (Version 4.1.0A.1):
 ===============================================================================
 
 RECENT MAJOR ACHIEVEMENTS (Version 4.1.0A.1):
+
+  🎉 HFS/HFS+ Specification Conformance (November 2025)
+  * Fixed alternate header locations for both HFS and HFS+ (file_size - 1024)
+  * Corrected HFS+ Volume Header field alignment (rsrcClumpSize, dataClumpSize at offsets +56, +60)
+  * Fixed nextCatalogID placement and initialization (offset +64, value >= 16)
+  * Set kHFSVolumeUnmountedBit correctly (attributes = 0x0100)
+  * Created comprehensive offline documentation (6 technical documents in ./doc/)
+  * Organized project structure (consolidated 9 summary files, moved 7 test scripts)
 
   🎉 HFS+ Journaling Implementation
   * Complete journal replay functionality for crash recovery
@@ -91,10 +107,25 @@ RECENT MAJOR ACHIEVEMENTS (Version 4.1.0A.1):
   * Exit codes compliance testing for system integration
   * Build system validation and fallback testing
   * CI/CD integration with automated quality checks
+  * Specification conformance validation tests
+
+  🎉 Documentation Excellence
+  * Apple TN1150 HFS+ specification (offline reference)
+  * HFS Classic complete specification
+  * Wikipedia references for both HFS and HFS+
+  * Practical implementation guide with examples
+  * Development history preserving project knowledge
+  * Clean, organized documentation structure
 
 ===============================================================================
 
 REMAINING TODO ITEMS:
+
+  Known Issues:
+  * B-tree compatibility issue: hfsutil cannot mount mkfs.hfs volumes
+    - Error: "malformed b*-tree header node (Input/output error)"
+    - Status: Under investigation (compare mkfs.hfs vs hformat B-tree init)
+    - Workaround: Use hformat for volumes requiring hfsutil access
 
   libhfs improvements:
   * don't allow reads from spared blocks

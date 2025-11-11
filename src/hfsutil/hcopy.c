@@ -30,6 +30,9 @@
 # include <string.h>
 # include <errno.h>
 # include <sys/stat.h>
+# include <sys/types.h>
+# include <dirent.h>
+# include <limits.h>
 
 # include "hfs.h"
 # include "hcwd.h"
@@ -77,11 +80,86 @@ cpifunc automode_unix(const char *path)
 }
 
 /*
+ * NAME:	copy_dir_recursive()
+ * DESCRIPTION:	recursively copy a directory from UNIX to HFS
+ */
+static
+int copy_dir_recursive(hfsvol *vol, const char *unixpath, 
+		       const char *hfspath, int mode, cpifunc copyfile)
+{
+  DIR *dir;
+  struct dirent *entry;
+  struct stat sbuf;
+  char unixbuf[PATH_MAX];
+  char hfsbuf[PATH_MAX];
+  int result = 0;
+
+  /* Open the UNIX directory */
+  dir = opendir(unixpath);
+  if (dir == NULL)
+    {
+      ERROR(errno, "cannot open directory");
+      return -1;
+    }
+
+  /* Create the HFS directory */
+  if (hfs_mkdir(vol, hfspath) == -1 && errno != EEXIST)
+    {
+      ERROR(errno, hfs_error);
+      closedir(dir);
+      return -1;
+    }
+
+  /* Iterate through directory entries */
+  while ((entry = readdir(dir)) != NULL)
+    {
+      /* Skip . and .. */
+      if (strcmp(entry->d_name, ".") == 0 || 
+	  strcmp(entry->d_name, "..") == 0)
+	continue;
+
+      /* Build full UNIX path */
+      snprintf(unixbuf, sizeof(unixbuf), "%s/%s", unixpath, entry->d_name);
+
+      /* Build HFS path */
+      snprintf(hfsbuf, sizeof(hfsbuf), "%s:%s", hfspath, entry->d_name);
+
+      /* Check if it's a directory */
+      if (stat(unixbuf, &sbuf) != -1 && S_ISDIR(sbuf.st_mode))
+	{
+	  /* Recursively copy subdirectory */
+	  if (copy_dir_recursive(vol, unixbuf, hfsbuf, mode, copyfile) == -1)
+	    {
+	      result = 1;
+	    }
+	}
+      else
+	{
+	  /* Copy file */
+	  cpifunc func = copyfile;
+	  if (mode == 'a')
+	    func = automode_unix(unixbuf);
+
+	  if (func(unixbuf, vol, hfsbuf) == -1)
+	    {
+	      ERROR(errno, cpi_error);
+	      hfsutil_perrorp(unixbuf);
+	      result = 1;
+	    }
+	}
+    }
+
+  closedir(dir);
+  return result;
+}
+
+/*
  * NAME:	do_copyin()
  * DESCRIPTION:	copy files from UNIX to HFS
  */
 static
-int do_copyin(hfsvol *vol, int argc, char *argv[], const char *dest, int mode)
+int do_copyin(hfsvol *vol, int argc, char *argv[], const char *dest, 
+	       int mode, int recursive)
 {
   hfsdirent ent;
   struct stat sbuf;
@@ -121,10 +199,30 @@ int do_copyin(hfsvol *vol, int argc, char *argv[], const char *dest, int mode)
       if (stat(argv[i], &sbuf) != -1 &&
 	  S_ISDIR(sbuf.st_mode))
 	{
-	  ERROR(EISDIR, 0);
-	  hfsutil_perrorp(argv[i]);
+	  /* Handle directory based on recursive flag */
+	  if (!recursive)
+	    {
+	      ERROR(EISDIR, 0);
+	      hfsutil_perrorp(argv[i]);
+	      result = 1;
+	    }
+	  else
+	    {
+	      /* Get the directory name for the HFS path */
+	      const char *dirname = strrchr(argv[i], '/');
+	      if (dirname == NULL)
+		dirname = argv[i];
+	      else
+		dirname++;
 
-	  result = 1;
+	      /* Use dest directly - it should be the full HFS path */
+	      if (copy_dir_recursive(vol, argv[i], dest, mode, copyfile) == -1)
+		{
+		  ERROR(errno, cpi_error);
+		  hfsutil_perrorp(argv[i]);
+		  result = 1;
+		}
+	    }
 	}
       else
 	{
@@ -170,7 +268,8 @@ cpofunc automode_hfs(hfsvol *vol, const char *path)
  * DESCRIPTION:	copy files from HFS to UNIX
  */
 static
-int do_copyout(hfsvol *vol, int argc, char *argv[], const char *dest, int mode)
+int do_copyout(hfsvol *vol, int argc, char *argv[], const char *dest, 
+	        int mode, int recursive)
 {
   struct stat sbuf;
   hfsdirent ent;
@@ -240,7 +339,7 @@ int do_copyout(hfsvol *vol, int argc, char *argv[], const char *dest, int mode)
 static
 int usage(void)
 {
-  fprintf(stderr, "Usage: %s [-m|-b|-t|-r|-a] source-path [...] target-path\n",
+  fprintf(stderr, "Usage: %s [-m|-b|-t|-r|-a] [-R] source-path [...] target-path\n",
 	  argv0);
 
   return 1;
@@ -252,18 +351,18 @@ int usage(void)
  */
 int hcopy_main(int argc, char *argv[])
 {
-  int nargs, mode = 'a', result = 0;
+  int nargs, mode = 'a', result = 0, recursive = 0;
   const char *target;
   int fargc;
   char **fargv;
   hfsvol *vol;
-  int (*copy)(hfsvol *, int, char *[], const char *, int);
+  int (*copy)(hfsvol *, int, char *[], const char *, int, int);
 
   while (1)
     {
       int opt;
 
-      opt = getopt(argc, argv, "mbtra");
+      opt = getopt(argc, argv, "mbtraR");
       if (opt == EOF)
 	break;
 
@@ -271,6 +370,10 @@ int hcopy_main(int argc, char *argv[])
 	{
 	case '?':
 	  return usage();
+
+	case 'R':
+	  recursive = 1;
+	  break;
 
 	default:
 	  mode = opt;
@@ -305,7 +408,7 @@ int hcopy_main(int argc, char *argv[])
     }
 
   if (result == 0)
-    result = copy(vol, fargc, fargv, target, mode);
+    result = copy(vol, fargc, fargv, target, mode, recursive);
 
   hfsutil_unmount(vol, &result);
 

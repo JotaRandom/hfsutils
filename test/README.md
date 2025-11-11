@@ -16,6 +16,9 @@ Comprehensive testing framework for Apple Silicon HFS utilities.
 ./run_tests.sh integration  # Integration workflow tests  
 ./run_tests.sh errors       # Error handling tests
 
+# Run feature-specific tests
+./test_hcopy_directory.sh   # Test hcopy recursive directory copying
+
 # Simple integration demonstration
 ./simple_integration_test.sh
 ```
@@ -70,6 +73,14 @@ A straightforward demonstration that:
 4. Tests navigation and file operations
 5. Verifies all utilities work together
 
+### 4. Feature-Specific Tests (`test_hcopy_directory.sh`)
+Comprehensive test suite for the hcopy recursive directory copying feature:
+- Tests recursive copying of directory structures with `-r` flag
+- Validates nested directories and file preservation
+- Tests edge cases (empty directories, special characters)
+- Includes real-world recovery scenarios
+- Can be run independently or integrated into main test suite
+
 ## Test Options
 
 ```bash
@@ -101,6 +112,7 @@ The test suite validates:
 - ✅ Error handling and edge cases
 - ✅ Volume information and management
 - ✅ Mixed HFS/HFS+ environment compatibility
+- ✅ Recursive directory copying with hcopy (when implemented)
 
 ## Known Issues
 
@@ -119,10 +131,11 @@ The test suite validates:
 ## Contributing
 
 When adding new tests:
-1. Add test data generation to `generate_test_data.sh`
-2. Implement test function in `run_tests.sh`
+1. Add test data generation to `generate_test_data.sh` if needed
+2. Implement test function in `run_tests.sh` for main suite integration
 3. Update appropriate test category in the case statement
-4. Document any new test patterns in this README
+4. For feature-specific tests, create separate `test_feature_name.sh` files
+5. Document any new test patterns in this README
 
 ## Requirements
 
