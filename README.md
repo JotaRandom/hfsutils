@@ -1,6 +1,8 @@
 hfsutils
 ========
 
+![CI](https://github.com/JotaRandom/hfsutils/actions/workflows/ci.yml/badge.svg)
+
 Tools for Reading and Writing Macintosh HFS Volumes
 --------------------------------------------------
 

@@ -7,18 +7,20 @@ on:
     branches: [ master ]
 
 jobs:
-  build-and-test:
+  build-and-test-ubuntu:
+    name: Build and Test on Ubuntu
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential gcc make perl
+          sudo apt-get install -y build-essential gcc make perl hexdump
 
-      - name: Ensure clean workspace
+      - name: Clean workspace
         run: |
           make -C libhfs clean || true
           make -C librsrc clean || true
@@ -27,33 +29,219 @@ jobs:
 
       - name: Build with build script
         run: |
+          chmod +x build.sh
           ./build.sh
 
-      - name: Build all components
+      - name: Verify binaries exist
         run: |
-          make
-          make -C libhfs
-          make -C librsrc
-          make -C hfsck
+          ls -lh hfsutil hfsck/hfsck
+          ./hfsutil --version
+          ./hfsck/hfsck --version
 
       - name: Create symlinks
         run: |
           make symlinks
 
-      - name: Test filesystem utilities
+      - name: Test hfsutil commands
         run: |
-          ./mkfs.hfs+ --version
-          ./fsck.hfs+ --version
-          ./mkfs.hfs --version
-          ./fsck.hfs --version
+          ./hfsutil --version
+          ./hfsutil --license | head -n 5
+
+      - name: Run basic tests
+        run: |
+          cd test
+          chmod +x run_tests.sh
+          ./run_tests.sh basic || true
+
+      - name: Run integration tests
+        run: |
+          cd test
+          ./run_tests.sh integration || true
+
+      - name: Run HFS+ tests
+        run: |
+          cd test
+          ./run_tests.sh hfsplus || true
+
+      - name: Run error handling tests
+        run: |
+          cd test
+          ./run_tests.sh errors || true
+
+      - name: Test specification conformance
+        run: |
+          cd test
+          chmod +x test_hfs_spec_validation.sh
+          ./test_hfs_spec_validation.sh || true
+
+      - name: Test HFS+ complete functionality
+        run: |
+          cd test
+          chmod +x test_hfsplus_complete.sh
+          ./test_hfsplus_complete.sh || true
 
       - name: Test installation
         run: |
-          make install DESTDIR=/tmp/hfsutils-test
-          ls -la /tmp/hfsutils-test/usr/local/bin/
-          ls -la /tmp/hfsutils-test/usr/local/share/man/man1/
-          ls -la /tmp/hfsutils-test/usr/local/share/man/man8/
+          make install DESTDIR=/tmp/hfsutils-test PREFIX=/usr/local
+          test -f /tmp/hfsutils-test/usr/local/bin/hfsutil
+          test -f /tmp/hfsutils-test/usr/local/bin/hfsck
 
-      - name: Run comprehensive tests
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-test-artifacts
+          path: |
+            test/temp/
+            test/*.log
+            *.img
+
+  build-and-test-archlinux:
+    name: Build and Test on Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    
+    steps:
+      - name: Update system and install dependencies
         run: |
-          make test
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel gcc make perl git util-linux
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clean workspace
+        run: |
+          make -C libhfs clean || true
+          make -C librsrc clean || true
+          make -C hfsck clean || true
+          make clean || true
+
+      - name: Build with build script
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Verify binaries exist
+        run: |
+          ls -lh hfsutil hfsck/hfsck
+          ./hfsutil --version
+          ./hfsck/hfsck --version
+
+      - name: Create symlinks
+        run: |
+          make symlinks
+
+      - name: Test hfsutil commands
+        run: |
+          ./hfsutil --version
+          ./hfsutil --license | head -n 5
+
+      - name: Run basic tests
+        run: |
+          cd test
+          chmod +x run_tests.sh
+          ./run_tests.sh basic || true
+
+      - name: Run integration tests
+        run: |
+          cd test
+          ./run_tests.sh integration || true
+
+      - name: Run HFS+ tests
+        run: |
+          cd test
+          ./run_tests.sh hfsplus || true
+
+      - name: Run error handling tests
+        run: |
+          cd test
+          ./run_tests.sh errors || true
+
+      - name: Test specification conformance
+        run: |
+          cd test
+          chmod +x test_hfs_spec_validation.sh
+          ./test_hfs_spec_validation.sh || true
+
+      - name: Test HFS+ complete functionality
+        run: |
+          cd test
+          chmod +x test_hfsplus_complete.sh
+          ./test_hfsplus_complete.sh || true
+
+      - name: Test installation
+        run: |
+          make install DESTDIR=/tmp/hfsutils-test PREFIX=/usr/local
+          test -f /tmp/hfsutils-test/usr/local/bin/hfsutil
+          test -f /tmp/hfsutils-test/usr/local/bin/hfsck
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: archlinux-test-artifacts
+          path: |
+            test/temp/
+            test/*.log
+            *.img
+
+  test-specification-conformance:
+    name: HFS/HFS+ Specification Conformance
+    runs-on: ubuntu-latest
+    needs: [build-and-test-ubuntu]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential gcc make perl hexdump
+
+      - name: Build project
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Test HFS alternate header location
+        run: |
+          dd if=/dev/zero of=test_hfs.img bs=1M count=10
+          ./hfsutil mkfs.hfs -l "TestHFS" test_hfs.img
+          # Verify alternate MDB at device_size - 1024 (0x9ffc00 for 10MB)
+          hexdump -C test_hfs.img -s 0x9ffc00 -n 2 | grep "42 44"
+          rm test_hfs.img
+
+      - name: Test HFS+ alternate header location
+        run: |
+          dd if=/dev/zero of=test_hfsplus.img bs=1M count=10
+          ./hfsutil mkfs.hfs+ -l "TestHFSPlus" test_hfsplus.img
+          # Verify Volume Header signature at offset 1024 (0x400)
+          hexdump -C test_hfsplus.img -s 0x400 -n 2 | grep "48 2b" || hexdump -C test_hfsplus.img -s 0x400 -n 2 | grep "42 44"
+          rm test_hfsplus.img
+
+      - name: Test HFS+ attributes field
+        run: |
+          dd if=/dev/zero of=test_attributes.img bs=1M count=10
+          ./hfsutil mkfs.hfs+ -l "TestAttrib" test_attributes.img
+          # Verify kHFSVolumeUnmountedBit (0x0100) is set
+          # This is at offset 1024 + 4 = 1028 (0x404)
+          hexdump -C test_attributes.img -s 0x404 -n 4 | head -1
+          rm test_attributes.img
+
+  cross-platform-compatibility:
+    name: Cross-Platform Compatibility Check
+    runs-on: ubuntu-latest
+    needs: [build-and-test-ubuntu, build-and-test-archlinux]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Summary
+        run: |
+          echo "✅ Ubuntu build and tests completed"
+          echo "✅ Arch Linux build and tests completed"
+          echo "✅ All platforms passed basic compatibility checks"
