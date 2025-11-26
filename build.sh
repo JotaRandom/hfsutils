@@ -37,6 +37,7 @@ if [ ! -f configure ]; then
 fi
 if [ ! -f config.status ]; then
     echo "Configuring libhfs..."
+    chmod +x configure
     CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
 fi
 make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || { echo "Failed to build libhfs"; exit 1; }
@@ -51,6 +52,7 @@ if [ ! -f configure ]; then
 fi
 if [ ! -f config.status ]; then
     echo "Configuring librsrc..."
+    chmod +x configure
     CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$PREFIX"
 fi
 make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || { echo "Failed to build librsrc"; exit 1; }
