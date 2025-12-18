@@ -29,10 +29,10 @@ const char hfsutils_rcsid[] =
 const char hfsutils_version[]   = "hfsutils version 4.1.0A.2";
 const char hfsutils_copyright[] = "Original Copyright (C) 1996-1998 Robert Leslie\n"
                                   "Modern fork Copyright (C) 2025 Brock Gunter-Smith\n"
-                                  "hfsutils re-port Copyright (C) 2025 Pablo Lezaeta";
+                                  "hfsutils re-port Copyright (C) 2025-2026 Pablo Lezaeta";
 const char hfsutils_author[]    = "Original: Robert Leslie <rob@mars.org>\n"
                                   "Fork maintainer: Brock Gunter-Smith\n"
-                                  "hfsutils re-port Copyright (C) 2025 Pablo Lezaeta";
+                                  "hfsutils re-port Copyright (C) 2025-2026 Pablo Lezaeta";
 
 const char hfsutils_license[] =
   "This is hfsutils updated to modern systems, taking as base\n"
