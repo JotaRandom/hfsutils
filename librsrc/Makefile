@@ -1,0 +1,138 @@
+#
+# librsrc - library for reading and writing Macintosh resources
+# Copyright (C) 1996-1998 Robert Leslie
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: Makefile.in,v 1.8 1998/04/12 01:33:26 rob Exp $
+#
+
+
+src =		.
+
+
+### USER CUSTOMIZATIONS FOLLOW ################################################
+
+# Installation directories
+PREFIX ?=	/usr/local
+DESTDIR ?=
+prefix =	$(PREFIX)
+exec_prefix =	${prefix}
+
+MANDEST =	${prefix}/share/man
+
+INCDEST =	${prefix}/include
+LIBDEST =	${exec_prefix}/lib
+
+INSTALL =	/usr/bin/install -c
+LIBINSTALL =	${INSTALL} -m 644
+
+# Build tools and flags
+CC ?=		gcc
+INCLUDES =	
+DEFINES =	-DHAVE_CONFIG_H
+LIBOBJS =	
+LIBS =		
+
+# User-provided flags
+CFLAGS ?=	-g -O2
+LDFLAGS ?=	
+
+# Internal flags
+COPTS =		$(CFLAGS)
+LDOPTS =	$(LDFLAGS)
+
+AR =		ar rc
+RANLIB =	ranlib
+
+### END OF USER CUSTOMIZATION #################################################
+
+CFLAGS =	$(COPTS) $(INCLUDES) $(DEFINES)
+LDFLAGS =	$(LDOPTS)
+
+###############################################################################
+
+TARGETS =	$(RSRCTARGET)
+
+RSRCTARGET =	librsrc.a
+RSRCOBJS =	data.o rsrc.o version.o $(LIBOBJS)
+
+###############################################################################
+
+all :: $(TARGETS)
+
+check :: all
+	@echo "No self-tests available."
+
+install ::
+	install -d "$(DESTDIR)$(LIBDEST)"
+	install -d "$(DESTDIR)$(INCDEST)"
+	$(LIBINSTALL) librsrc.a "$(DESTDIR)$(LIBDEST)/."
+	$(LIBINSTALL) rsrc.h "$(DESTDIR)$(INCDEST)/."
+
+again :: clean all
+
+depend ::
+	( sed -n '1,/^### DEPEND/p' Makefile.in;  \
+	  echo;  \
+	  $(CC) -MM $(INCLUDES) $(DEFINES) *.c;  \
+	) > Makefile.in.new
+	mv -f Makefile.in.new Makefile.in
+
+clean ::
+	rm -f $(TARGETS) *.o gmon.* core
+	rm -f main
+
+distclean :: clean
+	rm -f config.status config.cache config.log config.h Makefile
+
+maintainer-clean :: distclean
+	rm -f config.h.in configure
+
+###############################################################################
+
+Makefile: config.status
+	./config.status && touch .stamp/config.h
+
+.stamp/config.h: config.status
+	./config.status && touch .stamp/config.h
+
+config.status: .stamp/configure .stamp/config.h.in Makefile.in
+	./config.status --recheck
+
+.stamp/configure: configure.in
+	autoconf && touch .stamp/configure
+
+.stamp/config.h.in: configure.in acconfig.h
+	autoheader && touch .stamp/config.h.in
+
+###############################################################################
+
+$(RSRCTARGET): $(RSRCOBJS)
+	$(AR) $@ $(RSRCOBJS)
+	$(RANLIB) $@
+
+main.o:
+	$(CC) $(CFLAGS) -I. -I../libhfs -c main.c -o $@
+
+main: librsrc.a main.o
+	$(CC) $(LDFLAGS) -L. -L../libhfs main.o -lhfs -lrsrc -o $@
+
+### DEPENDENCIES FOLLOW #######################################################
+
+data.o: data.c config.h data.h
+main.o: main.c /usr/local/include/hfs.h rsrc.h
+rsrc.o: rsrc.c config.h librsrc.h rsrc.h data.h
+version.o: version.c version.h
