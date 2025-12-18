@@ -95,14 +95,18 @@ stamp-h1
 
 # Test artifacts - DO NOT commit test images
 *.img
-test_*.img
 /tmp/
 /test/tmp/
 /test/**/*.img
-/test/**/test_*
 /tests/**/*.img
-/tests/**/test_*
 hfsutils.log
+
+# But DO commit test scripts
+!test/test_mkfs.sh
+!test/test_fsck.sh
+!test/test_hfsutils.sh
+!test/lib/validation.sh
+!test/README.md
 
 # IDE
 .vscode/
