@@ -545,4 +545,30 @@ uninstall-set-hfsplus: uninstall-mkfs.hfs+ uninstall-fsck.hfs+ uninstall-mount.h
 	rm -f $(DESTDIR)$(MAN8DIR)/mount.hfsplus.8
 	@echo "HFS+ toolset uninstalled"
 
-.PHONY: all standalone symlinks clean distclean install-mkfs.hfs install-mkfs.hfs+ install-fsck.hfs install-fsck.hfs+ install-mount.hfs install-mount.hfs+ install-mkfs install-fsck install-mount install-set-hfs install-set-hfsplus uninstall-mkfs.hfs uninstall-mkfs.hfs+ uninstall-fsck.hfs uninstall-fsck.hfs+ uninstall-mount.hfs uninstall-mount.hfs+ uninstall-set-hfs uninstall-set-hfsplus test help libhfs librsrc hfsck mkfs.hfs fsck.hfs mount.hfs
+# ============================================================================
+# CONVENIENCE INSTALL TARGETS
+# ============================================================================
+
+# Linux: Only filesystem utilities (mkfs, fsck, mount)
+# These work with Linux kernel HFS/HFS+ drivers
+install-linux: install-set-hfs install-set-hfsplus
+	@echo "Linux utilities installed (HFS and HFS+ toolsets)"
+	@echo "Note: Requires kernel modules: modprobe hfs hfsplus"
+
+# Complete: All utilities including hfsutil
+# For systems without HFS mount support or for full installation
+install-complete: install-set-hfs install-set-hfsplus
+	@echo "Installing hfsutil..."
+	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(MANDIR)/man1
+	install -m 755 hfsutil $(DESTDIR)$(BINDIR)/hfsutil
+	# Install hfsutil manpages
+	install -m 644 doc/man/hfsutils.1 $(DESTDIR)$(MANDIR)/man1/hfsutils.1
+	install -m 644 doc/man/hformat.1 $(DESTDIR)$(MANDIR)/man1/hformat.1
+	install -m 644 doc/man/hls.1 $(DESTDIR)$(MANDIR)/man1/hls.1
+	install -m 644 doc/man/hcopy.1 $(DESTDIR)$(MANDIR)/man1/hcopy.1
+	install -m 644 doc/man/hmount.1 $(DESTDIR)$(MANDIR)/man1/hmount.1
+	install -m 644 doc/man/humount.1 $(DESTDIR)$(MANDIR)/man1/humount.1
+	@echo "Complete installation finished (filesystem utilities + hfsutil)"
+
+.PHONY: all standalone symlinks clean distclean install-mkfs.hfs install-mkfs.hfs+ install-fsck.hfs install-fsck.hfs+ install-mount.hfs install-mount.hfs+ install-mkfs install-fsck install-mount install-set-hfs install-set-hfsplus uninstall-mkfs.hfs uninstall-mkfs.hfs+ uninstall-fsck.hfs uninstall-fsck.hfs+ uninstall-mount.hfs uninstall-mount.hfs+ uninstall-set-hfs uninstall-set-hfsplus install-linux install-complete test help libhfs librsrc hfsck mkfs.hfs fsck.hfs mount.hfs
