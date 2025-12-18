@@ -1,11 +1,478 @@
-\section{mkfs.hfs - HFS Filesystem Creation}
+\chapter{Filesystem Creation Utilities}
 
-\textit{This chapter will include complete mkfs.hfs and mkfs.hfs+ documentation from manpages.}
+This chapter documents the mkfs.hfs and mkfs.hfs+ utilities for creating HFS and HFS+ filesystems.
 
-\subsection{Command Synopsis}
+\section{mkfs.hfs - HFS Classic Filesystem Creation}
+
+\subsection{Synopsis}
+
 \begin{verbatim}
-mkfs.hfs [-f] [-L label] device
-mkfs.hfs+ [-f] [-j] [-L label] [-s size] device
+mkfs.hfs [-L label] [-l label] [-s size] [-b block_size] device
 \end{verbatim}
 
-\textbf{Note}: Full content will be converted from doc/man/mkfs.hfs.8 and mkfs.hfplus.8
+\subsection{Description}
+
+Creates an HFS (Hierarchical File System) Classic volume on the specified device. The utility initializes all required metadata structures including the Master Directory Block (MDB), volume bitmap, extents file, and catalog file.
+
+\subsection{Options}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Option} & \textbf{Description} \\
+\midrule
+\endhead
+-L label & Set volume label (primary option, Unix standard) \\
+-l label & Set volume label (alias for -L) \\
+-s size & Explicit volume size in bytes (optional, auto-detected from device) \\
+-b block\_size & Allocation block size in bytes (default: auto-calculated, min 512, max 65536) \\
+device & Block device or file to format (required) \\
+\bottomrule
+\caption{mkfs.hfs Options}
+\end{longtable}
+
+\subsection{Volume Label}
+
+\textbf{Format}: Pascal string (1-27 characters)
+\begin{itemize}
+    \item First byte: length (1-27)
+    \item Following bytes: MacRoman encoded characters
+    \item Maximum: 27 characters (28 bytes total with length byte)
+    \item Default: "Untitled" if not specified
+\end{itemize}
+
+\textbf{Character restrictions}:
+\begin{itemize}
+    \item Colon (:) not allowed (path separator)
+    \item MacRoman encoding (not UTF-8)
+    \item ASCII subset recommended for compatibility
+\end{itemize}
+
+\subsection{Block Size Selection}
+
+\textbf{Automatic algorithm}:
+\begin{verbatim}
+if (volume_size <= 256 MB)
+    block_size = 512 bytes
+else if (volume_size <= 512 MB)
+    block_size = 1024 bytes
+else if (volume_size <= 1 GB)
+    block_size = 2048 bytes
+else
+    block_size = min(32768, optimal_for_size)
+\end{verbatim}
+
+\textbf{Constraints}:
+\begin{itemize}
+    \item Must be power of 2
+    \item Minimum: 512 bytes
+    \item Maximum: 65,536 bytes (64 KB)
+    \item Must be multiple of device sector size
+    \item Total blocks must fit in 16-bit field (max 65,535 blocks)
+\end{itemize}
+
+\subsection{Initialization Sequence}
+
+\subsubsection{Step 1: Device Validation}
+\begin{enumerate}
+    \item Open device for read/write
+    \item Query device size
+    \item Verify minimum size (1440 KB for floppy compatibility)
+    \item Calculate total blocks
+    \item Verify blocks $\leq$ 65,535 (16-bit limit)
+\end{enumerate}
+
+\subsubsection{Step 2: Master Directory Block (MDB) Creation}
+\begin{enumerate}
+    \item Zero 512-byte MDB buffer
+    \item Set drSigWord = 0x4244 ('BD')
+    \item Set drCrDate = current HFS time (hfs\_get\_safe\_time())
+    \item Set drLsMod = current HFS time
+    \item Set drAtrb = 0x0100 (unmounted cleanly bit)
+    \item Set drNmFls = 0 (no files initially)
+    \item Set drVBMSt = 3 (bitmap starts at block 3)
+    \item Set drAllocPtr = 0 (allocation search starts at 0)
+    \item Set drNxtCNID = 16 (first available CNID)
+    \item Set drFreeBks = total\_blocks - reserved
+    \item Set drVN = volume label (Pascal string)
+    \item Calculate drVBMSt based on allocation block size
+    \item Initialize extent descriptors for catalog and extents files
+\end{enumerate}
+
+\subsubsection{Step 3: Allocation Bitmap Initialization}
+\begin{enumerate}
+    \item Calculate bitmap size: (total\_blocks + 7) / 8 bytes
+    \item Allocate bitmap buffer
+    \item Mark boot blocks as used (blocks 0-1)
+    \item Mark MDB as used (block 2)
+    \item Mark bitmap itself as used
+    \item Mark catalog file extents as used
+    \item Mark extents file extents as used
+    \item Write bitmap to drVBMSt
+\end{enumerate}
+
+\subsubsection{Step 4: Catalog File Initialization}
+\begin{enumerate}
+    \item Allocate initial catalog file (default: 10 allocation blocks)
+    \item Create header node (node 0):
+    \begin{itemize}
+        \item Node descriptor: kind = 1 (header)
+        \item BTHeaderRec: initialize all fields
+        \item Set bthDepth = 1 (only root node)
+        \item Set bthRoot = 1 (root is node 1)
+        \item Set bthNRecs = 0 (no records yet)
+        \item Set bthFNode = 0, bthLNode = 0
+    \end{itemize}
+    \item Create root folder record (CNID 2) in node 1
+    \item Write catalog file to allocated extents
+\end{enumerate}
+
+\subsubsection{Step 5: Extents File Initialization}
+\begin{enumerate}
+    \item Allocate extents file (default: 5 allocation blocks)
+    \item Create header node with empty B-tree
+    \item Initialize BTHeaderRec
+    \item Set extents file as empty (no overflow extents initially)
+\end{enumerate}
+
+\subsubsection{Step 6: Alternate MDB}
+\begin{enumerate}
+    \item Copy primary MDB to buffer
+    \item Write to offset: device\_size\_bytes - 1024
+    \item Verify write succeeded
+\end{enumerate}
+
+\subsubsection{Step 7: Finalization}
+\begin{enumerate}
+    \item Sync all writes to device
+    \item Close device
+    \item Report success (exit 0)
+\end{enumerate}
+
+\subsection{Exit Codes}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Code} & \textbf{Meaning} \\
+\midrule
+\endhead
+0 & Success, filesystem created \\
+1 & Usage error (invalid arguments, missing device) or mkfs failure \\
+\bottomrule
+\caption{mkfs.hfs Exit Codes (Unix Standard)}
+\end{longtable}
+
+\subsection{Examples}
+
+\textbf{Create HFS volume with label}:
+\begin{verbatim}
+mkfs.hfs -L "My Volume" /dev/sdb1
+mkfs.hfs -L "Backup" disk.hfs
+\end{verbatim}
+
+\textbf{Create with specific block size}:
+\begin{verbatim}
+mkfs.hfs -L "Data" -b 4096 /dev/sdc1
+\end{verbatim}
+
+\textbf{Create with explicit size}:
+\begin{verbatim}
+dd if=/dev/zero of=test.hfs bs=1M count=50
+mkfs.hfs -s 52428800 -L "Test" test.hfs
+\end{verbatim}
+
+\section{mkfs.hfs+ - HFS Plus Filesystem Creation}
+
+\subsection{Synopsis}
+
+\begin{verbatim}
+mkfs.hfs+ [-L label] [-l label] [-s size] [-b block_size]
+          [-j] [-J journal_size] device
+\end{verbatim}
+
+\subsection{Description}
+
+Creates an HFS+ (Hierarchical File System Plus) volume. Supports journaling, larger volumes, and Unicode filenames. Initializes Volume Header, allocation bitmap, catalog B-tree, extents B-tree, attributes B-tree, and optionally journal.
+
+\subsection{Options}
+
+\begin{longtable}{lp{9cm}}
+\toprule
+\textbf{Option} & \textbf{Description} \\
+\midrule
+\endhead
+-L label & Set volume label (Unicode, primary option) \\
+-l label & Set volume label (alias for -L) \\
+-s size & Explicit volume size in bytes \\
+-b block\_size & Allocation block size (default: 4096, min 512) \\
+-j & Enable journaling (WARNING: Linux kernel does not support) \\
+-J size & Set journal size in bytes (requires -j) \\
+device & Block device or file to format \\
+\bottomrule
+\caption{mkfs.hfs+ Options}
+\end{longtable}
+
+\subsection{Volume Label}
+
+\textbf{Format}: HFSUniStr255 (UTF-16BE, NFD normalized)
+\begin{itemize}
+    \item Maximum: 255 UTF-16 characters (510 bytes + 2-byte length)
+    \item Encoding: UTF-16 Big Endian
+    \item Normalization: MUST be NFD (decomposed)
+    \item Example: "Test" = 0x0004 0x0054 0x0065 0x0073 0x0074
+\end{itemize}
+
+\subsection{Block Size Selection}
+
+\textbf{Default}: 4096 bytes (4 KB) - optimal for modern drives
+
+\textbf{Recommended values}:
+\begin{itemize}
+    \item 4 KB: Standard, best compatibility
+    \item 8 KB: Large volumes ($>$ 1 TB)
+    \item 16 KB: Very large volumes ($>$ 10 TB)
+\end{itemize}
+
+\subsection{Initialization Sequence}
+
+\subsubsection{Step 1: Device Validation}
+\begin{enumerate}
+    \item Open device read/write
+    \item Query device size
+    \item Verify minimum size (typically 1 MB)
+    \item Calculate total allocation blocks
+    \item Verify blocks fit in 32-bit field
+\end{enumerate}
+
+\subsubsection{Step 2: Volume Header Creation}
+\begin{enumerate}
+    \item Zero 512-byte Volume Header buffer
+    \item Set signature = 0x482B ('H+')
+    \item Set version = 4
+    \item Set attributes = 0x00000100 (unmounted bit)
+    \item Set lastMountedVersion = 0x6873786C ('hfsutil' signature)
+    \item Set journalInfoBlock = 0 (or block number if -j)
+    \item Set createDate, modifyDate = hfs\_get\_safe\_time()
+    \item Set fileCount = 0, folderCount = 1 (root folder)
+    \item Set blockSize = selected block size
+    \item Set totalBlocks = calculated total
+    \item Set freeBlocks = total - reserved
+    \item Set rsrcClumpSize = blockSize * 4
+    \item Set dataClumpSize = blockSize * 4
+    \item Set nextCatalogID = 16
+    \item Initialize fork data for special files (allocation, extents, catalog, attributes)
+\end{enumerate}
+
+\subsubsection{Step 3: Allocation Bitmap File}
+\begin{enumerate}
+    \item Calculate bitmap size: (totalBlocks + 7) / 8 bytes
+    \item Allocate allocation file
+    \item Set logicalSize in Volume Header allocationFile
+    \item Mark boot blocks, VH, bitmap, B-trees as used
+    \item Write bitmap to allocation file extents
+\end{enumerate}
+
+\subsubsection{Step 4: Catalog B-Tree}
+\begin{enumerate}
+    \item Allocate catalog file (default: 20 allocation blocks)
+    \item Node size: 4096 bytes (standard)
+    \item Create header node (node 0):
+    \begin{itemize}
+        \item BTHeaderRec: treeDepth = 1, nodeSize = 4096
+        \item btreeType = 128 (HFS+)
+        \item keyCompareType = 0xBC (case-insensitive)
+        \item maxKeyLength = 516 (2 + 4 + 510 for Unicode)
+    \end{itemize}
+    \item Create root folder record (CNID 2) as leaf node
+    \item Set fork data in volume Header catalogFile
+\end{enumerate}
+
+\subsubsection{Step 5: Extents B-Tree}
+\begin{enumerate}
+    \item Allocate extents file (default: 10 allocation blocks)
+    \item Create header node with empty tree
+    \item Initialize BTHeaderRec
+    \item No records initially (all files fit in catalog)
+\end{enumerate}
+
+\subsubsection{Step 6: Attributes B-Tree (Optional)}
+\begin{enumerate}
+    \item Normally left empty (logicalSize = 0)
+    \item Created on-demand when first attribute added
+    \item If created: allocate minimum space, initialize header
+\end{enumerate}
+
+\subsubsection{Step 7: Journal Setup (if -j)}
+\begin{enumerate}
+    \item Calculate journal size (default: 8 MB or 0.1\% of volume)
+    \item Allocate journal file (CNID 14)
+    \item Create JournalInfoBlock at allocated block
+    \item Set journalInfoBlock in Volume Header
+    \item Set attributes |= 0x00002000 (journaled bit)
+    \item Initialize journal header with magic 0x4A4E4C78
+    \item \textbf{WARNING}: Emit warning about Linux incompatibility
+\end{enumerate}
+
+\subsubsection{Step 8: Alternate Volume Header}
+\begin{enumerate}
+    \item Copy Volume Header to buffer
+    \item Write to: device\_size\_bytes - 1024
+    \item Verify success
+\end{enumerate}
+
+\subsubsection{Step 9: Finalization}
+\begin{enumerate}
+    \item Sync all writes
+    \item Close device
+    \item Print summary (blocks, size, journal status)
+    \item Exit 0
+\end{enumerate}
+
+\subsection{Journaling Considerations}
+
+\textbf{CRITICAL WARNING}: The Linux HFS+ kernel driver does NOT support journaling.
+
+\begin{itemize}
+    \item \textbf{macOS}: Full journal support, safe to use -j
+    \item \textbf{Linux}: Journal ignored, potential corruption on crash
+    \item \textbf{Recommendation}: Omit -j for Linux-mounted volumes
+    \item \textbf{Alternative}: Disable journal on macOS before sharing with Linux
+\end{itemize}
+
+\textbf{Journal size recommendations}:
+\begin{itemize}
+    \item Minimum: 1 MB
+    \item Default: 8 MB or 0.1\% of volume size (whichever larger)
+    \item Maximum: 512 MB (practical limit)
+    \item Formula: max(8MB, min(512MB, volume\_size * 0.001))
+\end{itemize}
+
+\subsection{Exit Codes}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Code} & \textbf{Meaning} \\
+\midrule
+\endhead
+0 & Success, filesystem created \\
+1 & Failure (invalid arguments, device error, insufficient space) \\
+\bottomrule
+\caption{mkfs.hfs+ Exit Codes (Unix Standard)}
+\end{longtable}
+
+\subsection{Examples}
+
+\textbf{Create standard HFS+ volume}:
+\begin{verbatim}
+mkfs.hfs+ -L "Data" /dev/sdb1
+mkfs.hfs+ -L "Backup" backup.hfsplus
+\end{verbatim}
+
+\textbf{Create journaled volume (macOS only)}:
+\begin{verbatim}
+mkfs.hfs+ -j -L "Journal Test" /dev/sdc1
+\end{verbatim}
+
+\textbf{Create with custom block size}:
+\begin{verbatim}
+mkfs.hfs+ -b 8192 -L "Large Volume" /dev/sdd1
+\end{verbatim}
+
+\textbf{Create image file}:
+\begin{verbatim}
+dd if=/dev/zero of=test.hfsplus bs=1M count=100
+mkfs.hfs+ -s 104857600 -L "Test Image" test.hfsplus
+\end{verbatim}
+
+\subsection{Verification After Creation}
+
+\textbf{Always verify with fsck}:
+\begin{verbatim}
+mkfs.hfs+ -L "New Volume" /dev/sdb1
+fsck.hfs+ -n /dev/sdb1
+\end{verbatim}
+
+Expected output: "Volume appears to be OK"
+
+\textbf{Check volume signature}:
+\begin{verbatim}
+xxd -s 1024 -l 2 -p /dev/sdb1
+# Expected: 482b (HFS+) or 4858 (HFSX)
+\end{verbatim}
+
+\subsection{Common Issues}
+
+\subsubsection{Device Busy}
+\begin{verbatim}
+Error: Device or resource busy
+\end{verbatim}
+\textbf{Solution}: Unmount device first
+\begin{verbatim}
+umount /dev/sdb1
+mkfs.hfs+ -L "Data" /dev/sdb1
+\end{verbatim}
+
+\subsubsection{Permission Denied}
+\begin{verbatim}
+Error: Permission denied
+\end{verbatim}
+\textbf{Solution}: Run with sudo
+\begin{verbatim}
+sudo mkfs.hfs+ -L "Data" /dev/sdb1
+\end{verbatim}
+
+\subsubsection{Volume Too Small}
+\begin{verbatim}
+Error: Volume too small for HFS+
+\end{verbatim}
+\textbf{Solution}: Use larger device or reduce block size
+
+\section{Implementation Details}
+
+\subsection{Source Code Organization}
+
+\begin{itemize}
+    \item \texttt{src/mkfs/mkfs\_hfs.c}: HFS Classic creation
+    \item \texttt{src/mkfs/mkfs\_hfsplus.c}: HFS+ creation
+    \item \texttt{src/common/hfstime.c}: Time conversion utilities
+    \item \texttt{src/common/version.c}: Version information
+\end{itemize}
+
+\subsection{Critical Functions}
+
+\textbf{hfs\_get\_safe\_time()}:
+\begin{verbatim}
+uint32_t hfs_get_safe_time(void) {
+    time_t now = time(NULL);
+    uint32_t hfs_time = (uint32_t)now + 2082844800;
+    if (hfs_time > 4294967295) {  // Y2K40
+        hfs_time = 4102444800;     // Jan 1, 2030
+    }
+    return hfs_time;
+}
+\end{verbatim}
+
+\textbf{calculate\_block\_size()}:
+\begin{verbatim}
+uint32_t calculate_block_size(uint64_t volume_size) {
+    if (volume_size <= 256 * 1024 * 1024)
+        return 512;
+    if (volume_size <= 512 * 1024 * 1024)
+        return 1024;
+    if (volume_size <= 1024 * 1024 * 1024)
+        return 2048;
+    return 4096;  // Default for large volumes
+}
+\end{verbatim}
+
+\section{Testing mkfs Utilities}
+
+See \texttt{test/test\_mkfs.sh} for comprehensive test suite validating:
+\begin{itemize}
+    \item Signature correctness (0x4244 for HFS, 0x482B for HFS+)
+    \item Volume Header field initialization
+    \item Allocation bitmap consistency
+    \item B-tree initialization
+    \item Alternate MDB/VH placement
+    \item Exit code compliance
+    \item fsck validation of created volumes
+\end{itemize}
