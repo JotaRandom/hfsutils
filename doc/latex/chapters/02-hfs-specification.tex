@@ -41,7 +41,7 @@ volume\_size - 512 & 512 & (Last logical block) \\
 
 \textbf{Critical Formula for Alternate MDB}:
 \begin{equation}
-\text{Alternate MDB offset} = \text{total\_bytes} - 1024
+\mathrm{Alt\_MDB\_offset} = \mathrm{total\_bytes} - 1024
 \end{equation}
 
 This is \textbf{NOT} \texttt{(total\_sectors - 2) * 512}. It is literally 1024 bytes before the end, regardless of sector size.
@@ -259,7 +259,7 @@ The alternate MDB is an \textbf{exact copy} of the primary MDB.
 
 \textbf{Precise formula}:
 \begin{equation}
-\text{alt\_offset} = \text{device\_size\_in\_bytes} - 1024
+\mathrm{alt\_offset} = \mathrm{device\_size\_bytes} - 1024
 \end{equation}
 
 \textbf{Example for 10 MB volume}:
@@ -377,7 +377,7 @@ Mac to Unix: unix_time = mac_time - MAC_EPOCH
 
 \textbf{Y2K28 Problem}:
 \begin{equation}
-\text{Max date} = 1904 + \frac{2^{32}}{365.25 \times 24 \times 3600} \approx 2028
+\mathrm{Max\_date} = 1904 + \frac{2^{32}}{365.25 \times 24 \times 3600} \approx 2028
 \end{equation}
 
 Specifically: February 6, 2028, 06:28:15 GMT
@@ -423,12 +423,12 @@ HFS uses 16-bit allocation block numbers, limiting volumes to 65,535 blocks maxi
 
 \textbf{Volume size calculation}:
 \begin{equation}
-\text{max\_volume} = 65535 \times \text{block\_size}
+\mathrm{max\_volume} = 65535 \times \mathrm{block\_size}
 \end{equation}
 
 For 32 KB blocks:
 \begin{equation}
-65535 \times 32768 = 2,147,450,880 \text{ bytes} \approx 2 \text{ GB}
+65535 \times 32768 = 2,147,450,880~\mathrm{bytes} \approx 2~\mathrm{GB}
 \end{equation}
 
 \textbf{Limitation}: Cannot create HFS volumes larger than \textasciitilde2 TB (with 64 KB blocks).

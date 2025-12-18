@@ -716,30 +716,34 @@ In HFSUniStr255:
 
 \subsection{Common NFD Characters - Complete Table}
 
+\textbf{Note}: The following table shows common accented characters and their NFD decompositions using ASCII representations due to PDF encoding limitations. In actual Unicode:
+
 \begin{longtable}{llll}
 \toprule
-\textbf{Character} & \textbf{NFC} & \textbf{NFD} & \textbf{Description} \\
+\textbf{Description} & \textbf{NFC} & \textbf{NFD} & \textbf{Components} \\
 \midrule
 \endhead
-à & U+00E0 & U+0061 U+0300 & a + grave \\
-á & U+00E1 & U+0061 U+0301 & a + acute \\
-â & U+00E2 & U+0061 U+0302 & a + circumflex \\
-ã & U+00E3 & U+0061 U+0303 & a + tilde \\
-ä & U+00E4 & U+0061 U+0308 & a + diaeresis \\
-ñ & U+00F1 & U+006E U+0303 & n + tilde \\
-ç & U+00E7 & U+0063 U+0327 & c + cedilla \\
-ü & U+00FC & U+0075 U+0308 & u + diaeresis \\
-ö & U+00F6 & U+006F U+0308 & o + diaeresis \\
-å & U+00E5 & U+0061 U+030A & a + ring above \\
+a-grave (\\`a) & U+00E0 & U+0061 U+0300 & a + combining grave \\
+a-acute (\\'a) & U+00E1 & U+0061 U+0301 & a + combining acute \\
+a-circumflex (\\^a) & U+00E2 & U+0061 U+0302 & a + combining circumflex \\
+a-tilde (\\~a) & U+00E3 & U+0061 U+0303 & a + combining tilde \\
+a-diaeresis (\\\"a) & U+00E4 & U+0061 U+0308 & a + combining diaeresis \\
+n-tilde (\\~n) & U+00F1 & U+006E U+0303 & n + combining tilde \\
+c-cedilla (c-ced) & U+00E7 & U+0063 U+0327 & c + combining cedilla \\
+u-diaeresis (\\\"u) & U+00FC & U+0075 U+0308 & u + combining diaeresis \\
+o-diaeresis (\\\"o) & U+00F6 & U+006F U+0308 & o + combining diaeresis \\
+a-ring (a-circ) & U+00E5 & U+0061 U+030A & a + combining ring above \\
 \bottomrule
-\caption{Common NFD Decompositions}
+\caption{Common NFD Decompositions (ASCII descriptions)}
 \end{longtable}
 
 \subsection{Compatibility Issues}
 
 \textbf{Linux/Windows}: Use NFC by default
 
-\textbf{Problem}: Filename created on macOS with "café.txt" (NFD) appears as different file than "café.txt" (NFC) created on Linux on the same HFS+ volume.
+\textbf{Problem}: Filename created on macOS with accented characters in NFD form appears as different file than same filename in NFC form created on Linux on the same HFS+ volume.
+
+\textbf{Example}: "caf\\'e.txt" stored as NFD (e + U+0301) vs NFC (U+00E9) - different catalog entries!
 
 \textbf{Workaround}: Always normalize to NFD when writing to HFS+.
 
