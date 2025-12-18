@@ -1,11 +1,493 @@
-\section{fsck.hfs - HFS Filesystem Check}
+\chapter{Filesystem Check and Repair Utilities}
 
-\textit{This chapter will include complete fsck.hfs and fsck.hfs+ documentation from manpages.}
+This chapter documents the fsck.hfs and fsck.hfs+ utilities for checking and repairing HFS and HFS+ filesystems.
 
-\subsection{Command Synopsis}
+\section{fsck.hfs - HFS Classic Filesystem Check}
+
+\subsection{Synopsis}
+
 \begin{verbatim}
-fsck.hfs [-dfnpvy] device
-fsck.hfs+ [-dfnpvy] device
+fsck.hfs [-dfnpvy] [-b block_size] device
 \end{verbatim}
 
-\textbf{Note}: Full content will be converted from doc/man/fsck.hfs.8 and fsck.hfs+.8
+\subsection{Description}
+
+Checks and optionally repairs an HFS (Hierarchical File System) Classic volume. Performs comprehensive validation of MDB, allocation bitmap, B-trees, and file/folder records. Can auto-detect HFS+ volumes and delegate to fsck.hfs+.
+
+\subsection{Options}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Option} & \textbf{Description} \\
+\midrule
+\endhead
+-d & Debug mode (verbose output for developers) \\
+-f & Force check even if volume appears clean \\
+-n & No-modify mode (check only, do not repair) \\
+-p & Preen mode (automatic safe repairs) \\
+-v & Verbose output \\
+-y & Yes to all repairs (assume yes to all prompts) \\
+-b size & Override block size detection \\
+device & Block device or file to check (required)\\
+\bottomrule
+\caption{fsck.hfs Options}
+\end{longtable}
+
+\subsection{Auto-Detection and Delegation}
+
+\textbf{Critical feature}: fsck.hfs automatically detects HFS+ volumes and delegates to fsck.hfs+
+
+\textbf{Detection algorithm}:
+\begin{enumerate}
+    \item Read bytes 1024-1025 (signature)
+    \item If signature == 0x482B ('H+') → Execute fsck.hfs+
+    \item If signature == 0x4858 ('HX') → Execute fsck.hfs+
+    \item If signature == 0x4244 ('BD') → Continue as HFS
+    \item Otherwise → Error: invalid filesystem
+\end{enumerate}
+
+\subsection{Validation Phases}
+
+\subsubsection{Phase 1: MDB Validation}
+\begin{enumerate}
+    \item Read MDB at offset 1024
+    \item Verify drSigWord == 0x4244
+    \item Check drAtrb unmounted bit (0x0100)
+    \item Verify drNxtCNID $\geq$ 16
+    \item Validate drAlBlkSiz is power of 2
+    \item Check drNmAlBlks * drAlBlkSiz fits device
+    \item Verify drFreeBks $\leq$ drNmAlBlks
+    \item Check dates (createDate, modifyDate) for Y2K28
+    \item Validate volume name (drVN) is valid Pascal string
+\end{enumerate}
+
+\subsubsection{Phase 2: Alternate MDB Check}
+\begin{enumerate}
+    \item Calculate alternate MDB offset: device\_size - 1024
+    \item Read alternate MDB
+    \item Compare with primary MDB
+    \item If mismatch: warn and offer repair
+\end{enumerate}
+
+\subsubsection{Phase 3: Allocation Bitmap Validation}
+\begin{enumerate}
+    \item Read allocation bitmap from drVBMSt
+    \item Verify bitmap size: (drNmAlBlks + 7) / 8 bytes
+    \item Count free blocks in bitmap
+    \item Compare with drFreeBks
+    \item If mismatch: error "Free block count incorrect"
+    \item Mark known allocated blocks:
+    \begin{itemize}
+        \item Boot blocks (0-1)
+        \item MDB (block 2)
+        \item Bitmap itself
+        \item Catalog file extents
+        \item Extents file extents
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Phase 4: Catalog B-Tree Validation}
+\begin{enumerate}
+    \item Read catalog file from extents in MDB
+    \item Validate header node (node 0):
+    \begin{itemize}
+        \item Node descriptor: kind == 1
+        \item BTHeaderRec: validate all fields
+        \item bthDepth $\geq$ 1
+        \item bthRoot valid node number
+        \item bthNRecs matches actual count
+    \end{itemize}
+    \item Traverse B-tree:
+    \begin{itemize}
+        \item Verify all node links (fLink, bLink)
+        \item Check key ordering (ascending)
+        \item Validate record types
+        \item Verify folder valence (file count)
+        \item Check CNID uniqueness
+    \end{itemize}
+    \item Validate root folder (CNID 2)
+    \item Check for orphaned files
+\end{enumerate}
+
+\subsubsection{Phase 5: Extents B-Tree Validation}
+\begin{enumerate}
+    \item Read extents file
+    \item Validate header node
+    \item Check all extent overflow records
+    \item Verify extents don't overlap
+    \item Ensure all extents within volume bounds
+\end{enumerate}
+
+\subsection{Repair Actions}
+
+\textbf{Safe repairs (enabled with -p or -y)}:
+\begin{itemize}
+    \item Fix free block count in bitmap
+    \item Repair alternate MDB from primary
+    \item Correct folder valence counts
+    \item Fix minor B-tree inconsistencies
+    \item Update modification date
+\end{itemize}
+
+\textbf{Unsafe repairs (require -y)}:
+\begin{itemize}
+    \item Rebuild allocation bitmap
+    \item Re-link orphaned files to lost+found
+    \item Truncate files with invalid extents
+    \item Rebuild B-tree structure
+\end{itemize}
+
+\subsection{Exit Codes (Unix/BSD Standard)}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Code} & \textbf{Meaning} \\
+\midrule
+\endhead
+0 & Filesystem is clean, no errors \\
+1 & Filesystem errors corrected successfully \\
+2 & Filesystem errors corrected, reboot required \\
+4 & Filesystem errors left uncorrected \\
+8 & Operational error (cannot open device, etc.) \\
+16 & Usage error (invalid command line arguments) \\
+32 & Fsck canceled by user \\
+128 & Shared library error \\
+\bottomrule
+\caption{fsck.hfs Exit Codes (BSD Standard)}
+\end{longtable}
+
+\textbf{Note}: These match BSD fsck standards for maximum compatibility.
+
+\subsection{Examples}
+
+\textbf{Check without modifying}:
+\begin{verbatim}
+fsck.hfs -n /dev/sdb1
+\end{verbatim}
+
+\textbf{Auto-repair in preen mode}:
+\begin{verbatim}
+fsck.hfs -p /dev/sdb1
+\end{verbatim}
+
+\textbf{Force check and repair}:
+\begin{verbatim}
+fsck.hfs -fy /dev/sdb1
+\end{verbatim}
+
+\textbf{Verbose check}:
+\begin{verbatim}
+fsck.hfs -vn disk.hfs
+\end{verbatim}
+
+\section{fsck.hfs+ - HFS Plus Filesystem Check}
+
+\subsection{Synopsis}
+
+\begin{verbatim}
+fsck.hfs+ [-dfnpvy] [-b block_size] device
+\end{verbatim}
+
+\subsection{Description}
+
+Checks and repairs HFS+ (Hierarchical File System Plus) volumes. Handles journaling, Unicode filenames, larger volumes, and extended attributes. Performs journal replay if needed before checking.
+
+\subsection{Options}
+
+Same as fsck.hfs (see above table).
+
+\subsection{Journal Handling}
+
+\textbf{Auto-detection}:
+\begin{enumerate}
+    \item Read Volume Header
+    \item Check attributes \& 0x00002000 (journaled bit)
+    \item If journaled:
+    \begin{itemize}
+        \item Read journalInfoBlock pointer
+        \item Load JournalInfoBlock
+        \item Read journal header
+        \item Verify magic == 0x4A4E4C78
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Journal replay process}:
+\begin{enumerate}
+    \item Check journal dirty flag
+    \item If dirty:
+    \begin{itemize}
+        \item Parse transaction log
+        \item Replay committed transactions
+        \item Write modified blocks to volume
+        \item Clear journal dirty flag
+        \item Emit message: "Journal replayed successfully"
+    \end{itemize}
+    \item Set Volume Header unmounted bit (0x0100)
+\end{enumerate}
+
+\textbf{Linux compatibility warning}:
+\begin{verbatim}
+WARNING: Volume is journaled
+Linux HFS+ driver does not support journaling
+Mount read-only to prevent corruption
+\end{verbatim}
+
+\subsection{Validation Phases}
+
+\subsubsection{Phase 1: Volume Header Validation}
+\begin{enumerate}
+    \item Read Volume Header at offset 1024
+    \item Verify signature == 0x482B or 0x4858
+    \item Check version == 4 or 5
+    \item Validate attributes field
+    \item Verify blockSize is power of 2
+    \item Check totalBlocks * blockSize $\leq$ device size
+    \item Verify freeBlocks $\leq$ totalBlocks
+    \item Check nextCatalogID $\geq$ 16
+    \item Validate rsrcClumpSize $>$ 0
+    \item Validate dataClumpSize $>$ 0
+    \item Check all fork data structures (allocation, extents, catalog, attributes)
+    \item Verify dates for Y2K40 (createDate, modifyDate, etc.)
+\end{enumerate}
+
+\subsubsection{Phase 2: Alternate Volume Header}
+\begin{enumerate}
+    \item Read from device\_size - 1024
+    \item Compare with primary
+    \item If mismatch: offer repair
+\end{enumerate}
+
+\subsubsection{Phase 3: Allocation File Validation}
+\begin{enumerate}
+    \item Read allocation file from fork data
+    \item Verify bitmap size: (totalBlocks + 7) / 8
+    \item Count free blocks
+    \item Compare with freeBlocks in Volume Header
+    \item Mark known allocations:
+    \begin{itemize}
+        \item Boot blocks
+        \item Volume Header
+        \item Allocation file itself
+        \item Extents file
+        \item Catalog file
+        \item Attributes file
+        \item Journal file (if journaled)
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Phase 4: Catalog B-Tree Validation}
+\begin{enumerate}
+    \item Read catalog file from Volume Header
+    \item Validate header node:
+    \begin{itemize}
+        \item BTHeaderRec complete validation
+        \item nodeSize == 4096 (standard)
+        \item btreeType == 128 (HFS+)
+        \item keyCompareType == 0xBC or 0xCF
+        \item maxKeyLength == 516
+    \end{itemize}
+    \item Traverse all nodes:
+    \begin{itemize}
+        \item Validate node descriptor
+        \item Check record count vs actual
+        \item Verify key ordering (NFD Unicode)
+        \item Validate HFSUniStr255 strings
+        \item Check folder valence consistency
+        \item Verify file/folder CNIDs unique
+        \item Validate fork data in file records
+    \end{itemize}
+    \item Check root folder (CNID 2)
+    \item Verify hard links (if present)
+    \item Check Thread records consistency
+\end{enumerate}
+
+\subsubsection{Phase 5: Extents B-Tree Validation}
+\begin{enumerate}
+    \item Read extents file
+    \item Validate header
+    \item Check all overflow extent records
+    \item Verify no extent overlaps
+    \item Ensure extents within bounds
+    \item Cross-check with allocation bitmap
+\end{enumerate}
+
+\subsubsection{Phase 6: Attributes B-Tree (if present)}
+\begin{enumerate}
+    \item If attributesFile logicalSize $>$ 0:
+    \begin{itemize}
+        \item Read attributes file
+        \item Validate header
+        \item Check attribute records
+        \item Verify com.apple.* attribute validity
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Repair Actions}
+
+\textbf{Safe repairs (-p or -y)}:
+\begin{itemize}
+    \item Fix free block count
+    \item Repair alternate Volume Header
+    \item Correct folder valence
+    \item Fix minor B-tree issues
+    \item Update Volume Header dates
+    \item Clear bad unmounted flag
+    \item Replay journal if dirty
+\end{itemize}
+
+\textbf{Aggressive repairs (-y only)}:
+\begin{itemize}
+    \item Rebuild allocation bitmap
+    \item Re-link orphaned files
+    \item Rebuild catalog B-tree
+    \item Fix extent overlaps
+    \item Truncate corrupted files
+\end{itemize}
+
+\subsection{Exit Codes}
+
+Same as fsck.hfs (BSD standard, see table above).
+
+\subsection{Examples}
+
+\textbf{Check journaled volume}:
+\begin{verbatim}
+fsck.hfs+ -n /dev/sdb1
+# Output: Replaying journal...
+# Output: Volume appears to be OK
+\end{verbatim}
+
+\textbf{Force check and repair}:
+\begin{verbatim}
+fsck.hfs+ -fy /dev/sdb1
+\end{verbatim}
+
+\textbf{Preen mode (safe auto-repair)}:
+\begin{verbatim}
+fsck.hfs+ -p /dev/sdb1
+\end{verbatim}
+
+\textbf{Verbose check with debug}:
+\begin{verbatim}
+fsck.hfs+ -dvn backup.hfsplus
+\end{verbatim}
+
+\subsection{Common Error Messages}
+
+\subsubsection{Volume Needs Repair}
+\begin{verbatim}
+** /dev/sdb1
+   Volume check failed
+   0 HFS Plus volume checked
+\end{verbatim}
+\textbf{Solution}: Run with -y to repair
+\begin{verbatim}
+fsck.hfs+ -y /dev/sdb1
+\end{verbatim}
+
+\subsubsection{Journal Replay Failed}
+\begin{verbatim}
+Journal replay failed: checksum mismatch
+\end{verbatim}
+\textbf{Solution}: Journal corrupted, may need manual intervention. Try:
+\begin{verbatim}
+fsck.hfs+ -fy /dev/sdb1  # Force repair
+\end{verbatim}
+
+\subsubsection{Free Block Count Incorrect}
+\begin{verbatim}
+Volume bitmap needs minor repair
+Free block count is 12450, should be 12453
+\end{verbatim}
+\textbf{Solution}: Safe to auto-repair with -p
+
+\subsubsection{Catalog B-Tree Corrupted}
+\begin{verbatim}
+Catalog file entry not found for thread record
+\end{verbatim}
+\textbf{Solution}: Serious error, requires -y repair
+
+\section{Implementation Details}
+
+\subsection{Source Code Organization}
+
+\begin{itemize}
+    \item \texttt{src/fsck/fsck\_hfs.c}: HFS Classic checker
+    \item \texttt{src/fsck/fsck\_hfsplus.c}: HFS+ checker
+    \item \texttt{src/fsck/btree.c}: B-tree validation
+    \item \texttt{src/fsck/journal.c}: Journal replay
+    \item \texttt{src/common/hfstime.c}: Y2K40 safeguards
+\end{itemize}
+
+\subsection{Critical Functions}
+
+\textbf{check\_volume\_header()}:
+\begin{verbatim}
+int check_volume_header(struct hfs_vh *vh) {
+    if (vh->signature != 0x482B && vh->signature != 0x4858)
+        return -1;
+    if (vh->version != 4 && vh->version != 5)
+        return -1;
+    if (vh->nextCatalogID < 16)
+        return -1;
+    if (vh->rsrcClumpSize == 0 || vh->dataClumpSize == 0)
+        return -1;
+    return 0;
+}
+\end{verbatim}
+
+\textbf{replay\_journal()}:
+\begin{verbatim}
+int replay_journal(int fd, struct hfs_vh *vh) {
+    if (!(vh->attributes & 0x2000))
+        return 0;  // Not journaled
+    
+    // Read JournalInfoBlock
+    // Verify journal magic
+    // Parse transactions
+    // Write blocks to volume
+    // Clear dirty flag
+    
+    return 0;  // Success
+}
+\end{verbatim}
+
+\subsection{B-Tree Validation Algorithm}
+
+\textbf{Recursive validation}:
+\begin{enumerate}
+    \item Start at root node (from BTHeaderRec)
+    \item For each node:
+    \begin{itemize}
+        \item Validate node descriptor
+        \item Check record count
+        \item For index nodes: recurse to children
+        \item For leaf nodes: validate records
+        \item Verify key ordering
+    \end{itemize}
+    \item Track visited nodes (detect cycles)
+    \item Verify leaf chain (fLink/bLink)
+\end{enumerate}
+
+\section{Testing fsck Utilities}
+
+See \texttt{test/test\_fsck.sh} for comprehensive tests:
+\begin{itemize}
+    \item Create clean volume, verify exit code 0
+    \item Create volume with errors, verify detection
+    \item Test journal replay on dirty volume
+    \item Verify all repair actions
+    \item Test HFS+ delegation from fsck.hfs
+    \item Validate exit code compliance
+    \item Test -n (no modify) mode preserves data
+\end{itemize}
+
+\subsection{Y2K40 Protection}
+
+Both fsck utilities use \texttt{hfs\_get\_safe\_time()} to:
+\begin{itemize}
+    \item Detect dates beyond Feb 6, 2040
+    \item Emit warning if found
+    \item Offer to correct to Jan 1, 2030
+    \item Update Volume Header/MDB if repaired
+\end{itemize}
