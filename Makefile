@@ -630,4 +630,59 @@ install-complete: install-set-hfs install-set-hfsplus
 	install -m 644 doc/man/humount.1 $(DESTDIR)$(MANDIR)/man1/humount.1
 	@echo "Complete installation finished (filesystem utilities + hfsutil)"
 
+# ============================================================================
+# DOCUMENTATION TARGETS
+# ============================================================================
+
+# PDF documentation (requires TeXLive)
+docs-pdf:
+	@echo "Building PDF documentation..."
+	@command -v pdflatex >/dev/null 2>&1 || { \
+		echo "Error: pdflatex not found. Install TeXLive:"; \
+		echo "  Debian/Ubuntu: sudo apt-get install texlive-latex-base texlive-latex-extra"; \
+		echo "  Fedora: sudo dnf install texlive-scheme-medium"; \
+		echo "  macOS: brew install --cask mactex-no-gui"; \
+		echo "  BSD: pkg install texlive-full"; \
+		exit 1; \
+	}
+	cd doc/latex && pdflatex -interaction=nonstopmode hfsutils-manual.tex
+	cd doc/latex && pdflatex -interaction=nonstopmode hfsutils-manual.tex
+	@echo "PDF documentation built: doc/latex/hfsutils-manual.pdf"
+
+# Text documentation (from PDF, requires pdftotext)
+docs-txt: docs-pdf
+	@command -v pdftotext >/dev/null 2>&1 || { \
+		echo "Error: pdftotext not found. Install poppler-utils:"; \
+		echo "  Debian/Ubuntu: sudo apt-get install poppler-utils"; \
+		echo "  Fedora: sudo dnf install poppler-utils"; \
+		echo "  macOS: brew install poppler"; \
+		exit 1; \
+	}
+	pdftotext doc/latex/hfsutils-manual.pdf doc/latex/hfsutils-manual.txt
+	@echo "Text documentation built: doc/latex/hfsutils-manual.txt"
+
+# HTML documentation (from PDF, requires pdf2htmlEX or pandoc)
+docs-html: docs-pdf
+	@echo "HTML documentation not yet implemented"
+	@echo "Alternative: use 'make docs-pdf' and distribute the PDF"
+
+# Build all documentation
+docs: docs-pdf docs-txt
+	@echo "All documentation formats built"
+
+# Install documentation
+install-docs: docs
+	@echo "Installing documentation..."
+	install -d $(DESTDIR)$(PREFIX)/share/doc/hfsutils
+	install -m 644 doc/latex/hfsutils-manual.pdf \
+		$(DESTDIR)$(PREFIX)/share/doc/hfsutils/
+	install -m 644 doc/latex/hfsutils-manual.txt \
+		$(DESTDIR)$(PREFIX)/share/doc/hfsutils/
+	install -m 644 README.md $(DESTDIR)$(PREFIX)/share/doc/hfsutils/
+	@echo "Documentation installed to $(PREFIX)/share/doc/hfsutils"
+
+# Clean documentation build artifacts
+docs-clean:
+	cd doc/latex && rm -f *.aux *.log *.out *.toc *.pdf *.txt
+
 .PHONY: all standalone symlinks clean distclean install-mkfs.hfs install-mkfs.hfs+ install-fsck.hfs install-fsck.hfs+ install-mount.hfs install-mount.hfs+ install-mkfs install-fsck install-mount install-set-hfs install-set-hfsplus uninstall-mkfs.hfs uninstall-mkfs.hfs+ uninstall-fsck.hfs uninstall-fsck.hfs+ uninstall-mount.hfs uninstall-mount.hfs+ uninstall-set-hfs uninstall-set-hfsplus install-linux install-complete test help libhfs librsrc hfsck mkfs.hfs fsck.hfs mount.hfs

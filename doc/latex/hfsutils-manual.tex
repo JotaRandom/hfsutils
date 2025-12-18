@@ -1,0 +1,142 @@
+\documentclass[11pt,a4paper,oneside]{book}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{longtable}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={HFS Utilities - Complete Technical Manual},
+    pdfauthor={hfsutils Project},
+    pdfsubject={HFS/HFS+ Filesystem Utilities},
+    pdfkeywords={HFS, HFS+, filesystem, mkfs, fsck, mount},
+}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    commentstyle=\color{green!60!black},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    showstringspaces=false,
+}
+
+% C language definition
+\lstdefinestyle{cstyle}{
+    language=C,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+}
+
+% Shell script style
+\lstdefinestyle{bashstyle}{
+    language=bash,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+}
+
+% Page style
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Document information
+\title{
+    \Huge\textbf{HFS Utilities}\\[0.5cm]
+    \Large Complete Technical Manual\\[0.2cm]
+    \large HFS and HFS+ Filesystem Utilities for Unix Systems
+}
+\author{hfsutils Project}
+\date{\today\\[0.5cm]Version 3.2.6}
+
+\begin{document}
+
+% Title page
+\maketitle
+\thispagestyle{empty}
+
+% Copyright and license page
+\newpage
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\textbf{Copyright and License}\\[1cm]
+\end{center}
+
+This manual documents the HFS Utilities (hfsutils) project, a collection of tools for creating, checking, mounting, and manipulating HFS and HFS+ filesystems on Unix-like systems including Linux, BSD, and macOS.
+
+\textbf{License}: GNU General Public License v2 or later
+
+\textbf{Project}: \url{https://github.com/JotaRandom/hfsutils}
+
+\textbf{Maintainer}: hfsutils Project Contributors
+
+\vspace{1cm}
+
+\textit{This manual is provided as-is without any warranty. The authors are not responsible for any data loss or system damage resulting from the use of these utilities.}
+
+\vfill
+
+% Table of contents
+\newpage
+\tableofcontents
+
+% Chapters
+\chapter{Introduction}
+\input{chapters/01-introduction}
+
+\chapter{HFS Specification}
+\input{chapters/02-hfs-specification}
+
+\chapter{HFS+ Specification}
+\input{chapters/03-hfs-plus-specification}
+
+\chapter{mkfs Utilities}
+\input{chapters/04-mkfs-utilities}
+
+\chapter{fsck Utilities}
+\input{chapters/05-fsck-utilities}
+
+\chapter{mount Utilities}
+\input{chapters/06-mount-utilities}
+
+\chapter{hfsutil Commands}
+\input{chapters/07-hfsutil-commands}
+
+\chapter{Implementation Details}
+\input{chapters/08-implementation-details}
+
+\chapter{Testing and Validation}
+\input{chapters/09-testing-validation}
+
+\appendix
+\chapter{Appendix}
+\input{chapters/10-appendix}
+
+% Bibliography (if needed)
+% \bibliographystyle{plain}
+% \bibliography{references}
+
+\end{document}

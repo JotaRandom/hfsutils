@@ -1,0 +1,249 @@
+\section{Overview}
+
+The HFS Utilities (hfsutils) project provides a comprehensive set of tools for working with Apple's HFS (Hierarchical File System) and HFS+ (HFS Plus) filesystems on Unix-like operating systems including Linux, BSD, and macOS.
+
+\subsection{Purpose and Goals}
+
+HFS and HFS+ filesystems are commonly used on:
+\begin{itemize}
+    \item Classic Mac OS systems (HFS)
+    \item Mac OS X and macOS systems prior to APFS (HFS+)
+    \item iPod devices
+    \item External drives formatted for Mac compatibility
+    \item Disk images and backups from Apple systems
+\end{itemize}
+
+This toolset enables Unix systems to:
+\begin{itemize}
+    \item \textbf{Create} HFS and HFS+ filesystems with \texttt{mkfs.hfs} and \texttt{mkfs.hfs+}
+    \item \textbf{Check and repair} filesystem integrity with \texttt{fsck.hfs} and \texttt{fsck.hfs+}
+    \item \textbf{Mount} HFS and HFS+ volumes with \texttt{mount.hfs} and \texttt{mount.hfs+} (requires kernel support)
+    \item \textbf{Manipulate files} on HFS volumes without mounting using \texttt{hfsutil} commands (useful on systems without HFS kernel drivers)
+\end{itemize}
+
+\subsection{Supported Systems}
+
+The utilities work on any POSIX-compliant system with appropriate kernel support:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{System} & \textbf{HFS Support} & \textbf{HFS+ Support} \\
+\midrule
+Linux & Kernel module \texttt{hfs} & Kernel module \texttt{hfsplus} \\
+FreeBSD & Native support & Native support \\
+macOS & Native support & Native support \\
+OpenBSD & Via FUSE & Via FUSE \\
+NetBSD & Via FUSE & Via FUSE \\
+\bottomrule
+\end{tabular}
+\caption{Platform Support Matrix}
+\end{table}
+
+\textbf{Note}: On systems without kernel HFS support, the \texttt{hfsutil} commands can still be used to access HFS filesystem contents.
+
+\subsection{Key Features}
+
+\subsubsection{Full Specification Compliance}
+All utilities strictly adhere to:
+\begin{itemize}
+    \item Inside Macintosh: Files (HFS specification)
+    \item Apple Technical Note TN1150 (HFS+ specification)
+    \item Unix/POSIX filesystem utility standards
+\end{itemize}
+
+\subsubsection{Zero-Tolerance Validation}
+The test suite implements a "zero-tolerance" policy:
+\begin{itemize}
+    \item ANY deviation from specification = test failure
+    \item ALL filesystems must be 100\% correct
+    \item Complete validation before and after fsck operations
+\end{itemize}
+
+\subsubsection{Journaling Support}
+HFS+ journaling is supported with appropriate warnings:
+\begin{itemize}
+    \item Journal creation with \texttt{mkfs.hfs+ -j}
+    \item Journal validation and replay in \texttt{fsck.hfs+}
+    \item Linux kernel compatibility warnings (journaling not supported in Linux HFS+ driver)
+\end{itemize}
+
+\subsubsection{Date Limit Awareness}
+The utilities handle filesystem date limits correctly:
+\begin{itemize}
+    \item HFS: Maximum date February 6, 2028 (Y2K28 problem)
+    \item HFS+: Maximum date February 6, 2040 (Y2K40 problem)
+    \item Automatic date correction to safe values
+\end{itemize}
+
+\section{Installation}
+
+\subsection{Building from Source}
+
+\subsubsection{Prerequisites}
+\begin{lstlisting}[style=bashstyle]
+# Debian/Ubuntu
+sudo apt-get install build-essential
+
+# Fedora/RHEL
+sudo dnf install gcc make
+
+# macOS
+xcode-select --install
+
+# BSD
+# Compiler included by default
+\end{lstlisting}
+
+\subsubsection{Compilation}
+\begin{lstlisting}[style=bashstyle]
+# Clone repository
+git clone https://github.com/JotaRandom/hfsutils.git
+cd hfsutils
+
+# Build all utilities
+make
+
+# Build specific sets
+make set-hfs        # mkfs.hfs, fsck.hfs, mount.hfs
+make set-hfsplus    # mkfs.hfs+, fsck.hfs+, mount.hfs+
+
+# Build with hfsutil
+make all
+\end{lstlisting}
+
+\subsubsection{Installation Options}
+
+\textbf{Linux systems} (with kernel HFS/HFS+ drivers):
+\begin{lstlisting}[style=bashstyle]
+sudo make install-linux PREFIX=/usr
+\end{lstlisting}
+
+\textbf{Complete installation} (filesystem utilities + hfsutil):
+\begin{lstlisting}[style=bashstyle]
+sudo make install-complete PREFIX=/usr/local
+\end{lstlisting}
+
+\textbf{Individual utilities}:
+\begin{lstlisting}[style=bashstyle]
+sudo make install-mkfs.hfs+ PREFIX=/usr
+sudo make install-fsck.hfs PREFIX=/usr
+sudo make install-mount.hfs+ PREFIX=/usr
+\end{lstlisting}
+
+\subsection{Verifying Installation}
+
+After installation, verify the utilities are available:
+\begin{lstlisting}[style=bashstyle]
+mkfs.hfs --version
+mkfs.hfs+ --version
+fsck.hfs --version
+fsck.hfs+ --version
+mount.hfs --help
+mount.hfs+ --help
+hfsutil --version   # If installed
+\end{lstlisting}
+
+Check manpages:
+\begin{lstlisting}[style=bashstyle]
+man mkfs.hfs
+man mkfs.hfs+
+man fsck.hfs+
+man mount.hfs+
+\end{lstlisting}
+
+\section{Quick Start}
+
+\subsection{Creating a Filesystem}
+
+Create an HFS filesystem:
+\begin{lstlisting}[style=bashstyle]
+# Create 10MB image file
+dd if=/dev/zero of=test.img bs=1M count=10
+
+# Format as HFS
+mkfs.hfs -L "MyDisk" test.img
+\end{lstlisting}
+
+Create an HFS+ filesystem:
+\begin{lstlisting}[style=bashstyle]
+# Create 50MB image file
+dd if=/dev/zero of=test.img bs=1M count=50
+
+# Format as HFS+
+mkfs.hfs+ -L "MyDisk" test.img
+
+# Format with journaling (Linux warning will appear)
+mkfs.hfs+ -j -L "MyDisk" test.img
+\end{lstlisting}
+
+\subsection{Checking a Filesystem}
+
+Verify filesystem integrity:
+\begin{lstlisting}[style=bashstyle]
+# Check HFS filesystem (read-only)
+fsck.hfs -n test.img
+
+# Check and repair HFS+ filesystem
+fsck.hfs+ -y test.img
+
+# Verbose output
+fsck.hfs+ -v -n test.img
+\end{lstlisting}
+
+\subsection{Mounting a Filesystem}
+
+On systems with kernel HFS/HFS+ support:
+\begin{lstlisting}[style=bashstyle]
+# Create mount point
+sudo mkdir /mnt/hfs
+
+# Mount read-write
+sudo mount.hfs+ test.img /mnt/hfs
+
+# Mount read-only
+sudo mount.hfs+ -r test.img /mnt/hfs
+
+# Unmount
+sudo umount /mnt/hfs
+\end{lstlisting}
+
+\subsection{Using hfsutil Commands}
+
+On systems without kernel support or for direct access:
+\begin{lstlisting}[style=bashstyle]
+# Format volume
+hfsutil hformat -L "MyDisk" test.img
+
+# Mount in hfsutil
+hfsutil hmount test.img
+
+# List contents
+hfsutil hls
+
+# Copy file into volume
+hfsutil hcopy myfile.txt :myfile.txt
+
+# Copy file out of volume
+hfsutil hcopy :myfile.txt retrieved.txt
+
+# Unmount
+hfsutil humount
+\end{lstlisting}
+
+\section{Documentation Structure}
+
+This manual is organized as follows:
+
+\begin{description}
+    \item[Chapter 2: HFS Specification] Details of the classic HFS filesystem format
+    \item[Chapter 3: HFS+ Specification] Details of the HFS+ filesystem format with journaling
+    \item[Chapter 4: mkfs Utilities] Filesystem creation tools
+    \item[Chapter 5: fsck Utilities] Filesystem checking and repair tools
+    \item[Chapter 6: mount Utilities] Filesystem mounting tools
+    \item[Chapter 7: hfsutil Commands] File manipulation without mounting
+    \item[Chapter 8: Implementation Details] Internal architecture and algorithms
+    \item[Chapter 9: Testing and Validation] Test suite and quality assurance
+    \item[Chapter 10: Appendix] Structure definitions, error codes, glossary
+\end{description}

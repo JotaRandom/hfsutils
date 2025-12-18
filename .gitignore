@@ -198,6 +198,26 @@ hfsck/hfsck
 # Backup files
 *~
 *.bak
+
+# LaTeX build artifacts
+doc/latex/*.aux
+doc/latex/*.log
+doc/latex/*.out
+doc/latex/*.toc
+doc/latex/*.lof
+doc/latex/*.lot
+doc/latex/*.fls
+doc/latex/*.fdb_latexmk
+doc/latex/*.synctex.gz
+doc/latex/*.bbl
+doc/latex/*.blg
+doc/latex/*.idx
+doc/latex/*.ilg
+doc/latex/*.ind
+
+# Keep the final PDFs for distribution
+!doc/latex/*.pdf
+
 *.swp
 
 # IDE files

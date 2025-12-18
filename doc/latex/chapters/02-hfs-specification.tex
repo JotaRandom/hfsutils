@@ -1,0 +1,219 @@
+\section{HFS Filesystem Overview}
+
+The Hierarchical File System (HFS) is the filesystem used by Apple Computer for Mac OS systems from 1985 until Mac OS X. Also known as "Mac OS Standard" or "HFS Classic", it provides a hierarchical directory structure with support for file and folder metadata.
+
+\subsection{Key Characteristics}
+
+\begin{itemize}
+    \item \textbf{Maximum volume size}: 2 TB
+    \item \textbf{Maximum file size}: 2 GB
+    \item \textbf{Filename length}: 31 characters (Macintosh Roman encoding)
+    \item \textbf{Date range}: January 1, 1904 to February 6, 2028 (Y2K28 limit)
+    \item \textbf{Allocation block size}: 512 bytes to 64 KB
+    \item \textbf{Case sensitivity}: Case-insensitive, case-preserving
+\end{itemize}
+
+\subsection{Volume Structure}
+
+An HFS volume is divided into logical blocks (512 bytes each) and allocation blocks (multiples of logical blocks).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{Block} & \textbf{Name} & \textbf{Description} \\
+\midrule
+0-1 & Boot Blocks & System startup information (1024 bytes) \\
+2 & Master Directory Block & Volume metadata and B-tree locations \\
+3+ & Allocation Bitmap & Block allocation map \\
+... & Extents B-tree & File extent records \\
+... & Catalog B-tree & Directory and file records \\
+... & Data Area & File contents \\
+Last-1 & Alternate MDB & Backup of Master Directory Block \\
+\bottomrule
+\end{tabular}
+\caption{HFS Volume Layout}
+\end{table}
+
+\section{Master Directory Block}
+
+The Master Directory Block (MDB) is located at logical block 2 (offset 1024 bytes) and contains critical volume information.
+
+\subsection{MDB Structure}
+
+\begin{longtable}{llp{6cm}}
+\toprule
+\textbf{Field} & \textbf{Offset} & \textbf{Description} \\
+\midrule
+\endhead
+drSigWord & +0 & Signature (0x4244 = 'BD') \\
+drCrDate & +2 & Volume creation date \\
+drLsMod & +6 & Last modification date \\
+drAtrb & +10 & Volume attributes (bit 8 = unmounted cleanly) \\
+drNmFls & +12 & Number of files in root directory \\
+drVBMSt & +14 & First allocation bitmap block \\
+drAllocPtr & +16 & Next unused allocation block \\
+drNmAlBlks & +18 & Number of allocation blocks \\
+drAlBlkSiz & +20 & Allocation block size (bytes) \\
+drClpSiz & +24 & Default clump size \\
+drAlBlSt & +26 & First allocation block \\
+drNxtCNID & +28 & Next unused Catalog Node ID \\
+drFreeBks & +32 & Number of free allocation blocks \\
+drVN & +36 & Volume name (1-27 characters, Pascal string) \\
+drVolBkUp & +64 & Last backup date \\
+drVSeqNum & +68 & Volume backup sequence number \\
+drWrCnt & +70 & Volume write count \\
+drXTClpSiz & +72 & Extents B-tree clump size \\
+drCTClpSiz & +76 & Catalog B-tree clump size \\
+drNmRtDirs & +80 & Number of directories in root \\
+drFilCnt & +82 & Number of files on volume \\
+drDirCnt & +86 & Number of directories on volume \\
+drFndrInfo & +90 & Finder information (32 bytes) \\
+drVCSize & +122 & Volume cache size \\
+drVBMCSize & +124 & Volume bitmap cache size \\
+drCtlCSize & +126 & Common volume cache size \\
+drXTFlSize & +128 & Extents B-tree file size \\
+drXTExtRec & +132 & Extents B-tree extents (3 extents) \\
+drCTFlSize & +144 & Catalog B-tree file size \\
+drCTExtRec & +148 & Catalog B-tree extents (3 extents) \\
+\bottomrule
+\caption{Master Directory Block Fields}
+\end{longtable}
+
+\subsection{Critical MDB Fields}
+
+\subsubsection{drSigWord (Signature)}
+\begin{itemize}
+    \item Value: \texttt{0x4244} ('BD' in ASCII)
+    \item Identifies the volume as HFS
+    \item \textbf{Validation}: Must be exactly \texttt{0x4244}
+\end{itemize}
+
+\subsubsection{drAtrb (Attributes)}
+Bit flags indicating volume state:
+\begin{itemize}
+    \item Bit 8 (0x0100): Volume unmounted properly
+    \item Bit 9 (0x0200): Spare blocks exist
+    \item Bit 10 (0x0400): Volume needs consistency check
+   \item Bit 15 (0x8000): Software lock
+\end{itemize}
+
+\textbf{Important}: mkfs.hfs sets bit 8 to indicate clean unmount.
+
+\subsubsection{drNxtCNID (Next Catalog Node ID)}
+\begin{itemize}
+    \item Minimum value: 16
+    \item IDs 1-15 are reserved:
+    \begin{itemize}
+        \item 1 = Parent of root directory
+        \item 2 = Root directory
+        \item 3 = Extents B-tree file
+        \item 4 = Catalog B-tree file
+        \item 5 = Bad block file
+    \end{itemize}
+    \item \textbf{Validation}: mkfs.hfs initializes to 16
+\end{itemize}
+
+\subsection{Alternate MDB}
+
+The alternate MDB is a complete copy of the MDB located at:
+\begin{equation}
+\text{Alternate MDB offset} = \text{volume\_size} - 1024 \text{ bytes}
+\end{equation}
+
+\textbf{Purpose}: Provides recovery if the primary MDB is corrupted.
+
+\textbf{Validation}: fsck.hfs verifies both MDBs match.
+
+\section{B-Trees}
+
+HFS uses B-trees for efficient file and directory lookups.
+
+\subsection{Extents B-Tree}
+
+Stores file extent records (physical block ranges):
+\begin{itemize}
+    \item Maps file portions to disk blocks
+    \item Handles fragmented files
+    \item Key: File CNID + fork type + start block
+\end{itemize}
+
+\subsection{Catalog B-Tree}
+
+Stores directory and file records:
+\begin{itemize}
+    \item Directory entries
+    \item File metadata (type, creator, dates, etc.)
+    \item Key: Parent directory CNID + filename
+\end{itemize}
+
+\section{Date Representation}
+
+HFS dates are 32-bit unsigned integers representing seconds since:
+\begin{center}
+\textbf{January 1, 1904 00:00:00 GMT}
+\end{center}
+
+\subsection{Y2K28 Problem}
+
+Maximum representable date:
+\begin{equation}
+1904 + 2^{32} / (365.25 \times 24 \times 3600) \approx 2040
+\end{equation}
+
+However, \textbf{HFS specification limits dates to February 6, 2028}.
+
+\textbf{Implementation}: mkfs.hfs and fsck.hfs use \texttt{hfs\_get\_safe\_time()} to ensure dates are within valid range.
+
+\section{Allocation Strategy}
+
+\subsection{Allocation Blocks}
+
+Files are allocated in multiples of allocation blocks:
+\begin{itemize}
+    \item Allocation block size determined by volume size
+    \item Typical sizes: 512 B, 1 KB, 2 KB, 4 KB
+    \item Larger blocks = less overhead, more waste for small files
+\end{itemize}
+
+\subsection{Clump Size}
+
+Default allocation size when extending files:
+\begin{itemize}
+    \item Reduces fragmentation
+    \item Calculated as multiple of allocation blocks
+    \item Stored in drClpSiz (MDB)
+\end{itemize}
+
+\section{Compatibility Notes}
+
+\subsection{Character Encoding}
+
+HFS uses Macintosh Roman encoding:
+\begin{itemize}
+    \item 8-bit encoding
+    \item Incompatible with UTF-8
+    \item Characters \textgreater127 map differently than ISO-8859-1
+\end{itemize}
+
+\textbf{Limitation}: Filenames with non-ASCII characters may not display correctly on non-Mac systems.
+
+\subsection{Resource Forks}
+
+HFS supports dual-fork files:
+\begin{itemize}
+    \item \textbf{Data fork}: Regular file contents
+    \item \textbf{Resource fork}: Application-specific data
+\end{itemize}
+
+\textbf{Note}: Most Unix systems only support data forks. Resource forks are preserved but not directly accessible.
+
+\subsection{Type and Creator Codes}
+
+HFS files have 4-character type and creator codes:
+\begin{itemize}
+    \item Type: File type (e.g., 'TEXT', 'PICT')
+    \item Creator: Creating application (e.g., 'MSWD' for Microsoft Word)
+\end{itemize}
+
+\textbf{Modern usage}: Largely replaced by filename extensions.
