@@ -423,32 +423,126 @@ test: test-unit test-integration
 # FLEXIBLE INSTALLATION TARGETS
 # ============================================================================
 
-# Linux installation (filesystem utilities only)
-install-linux: $(STANDALONE_UTILITIES)
-	@echo "Installing Linux-specific utilities (mkfs.hfs, fsck.hfs, mount.hfs)..."
-	install -d $(DESTDIR)$(SBINDIR)
-	install -d $(DESTDIR)$(MANDIR)/man8
-	@echo "Note: Actual installation will be implemented in subsequent tasks"
-	@echo "Placeholder created for install-linux target"
+# Manpage directory
+MAN8DIR = $(MANDIR)/man8
 
-# Other systems installation (filesystem utilities + hfsutils)
-install-other: $(STANDALONE_UTILITIES) hfsutil
-	@echo "Installing utilities for other systems (mkfs.hfs, fsck.hfs + hfsutils)..."
-	install -d $(DESTDIR)$(SBINDIR)
-	install -d $(DESTDIR)$(BINDIR)
-	install -d $(DESTDIR)$(MANDIR)/man1
-	install -d $(DESTDIR)$(MANDIR)/man8
-	@echo "Note: Actual installation will be implemented in subsequent tasks"
-	@echo "Placeholder created for install-other target"
+# ============================================================================
+# INDIVIDUAL UTILITY INSTALL TARGETS
+# ============================================================================
 
-# Complete installation (everything)
-install-complete: $(STANDALONE_UTILITIES) hfsutil
-	@echo "Installing all utilities (mkfs.hfs, fsck.hfs, mount.hfs + hfsutils)..."
+# mkfs utilities
+install-mkfs.hfs: 
+	@echo "Installing mkfs.hfs..."
 	install -d $(DESTDIR)$(SBINDIR)
-	install -d $(DESTDIR)$(BINDIR)
-	install -d $(DESTDIR)$(MANDIR)/man1
-	install -d $(DESTDIR)$(MANDIR)/man8
-	@echo "Note: Actual installation will be implemented in subsequent tasks"
-	@echo "Placeholder created for install-complete target"
+	install -d $(DESTDIR)$(MAN8DIR)
+	install -m 755 build/standalone/mkfs.hfs $(DESTDIR)$(SBINDIR)/mkfs.hfs
+	install -m 644 doc/man/mkfs.hfs.8 $(DESTDIR)$(MAN8DIR)/mkfs.hfs.8
 
-.PHONY: all standalone symlinks clean distclean install install-libs install-symlinks install-linux install-other install-complete test help libhfs librsrc hfsck mkfs.hfs fsck.hfs mount.hfs
+install-mkfs.hfs+:
+	@echo "Installing mkfs.hfs+..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(MAN8DIR)
+	install -m 755 build/standalone/mkfs.hfs+ $(DESTDIR)$(SBINDIR)/mkfs.hfs+
+	install -m 644 doc/man/mkfs.hfs+.8 $(DESTDIR)$(MAN8DIR)/mkfs.hfs+.8
+
+# fsck utilities
+install-fsck.hfs:
+	@echo "Installing fsck.hfs..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(MAN8DIR)
+	install -m 755 build/standalone/fsck.hfs $(DESTDIR)$(SBINDIR)/fsck.hfs
+	install -m 644 doc/man/fsck.hfs.8 $(DESTDIR)$(MAN8DIR)/fsck.hfs.8
+
+install-fsck.hfs+:
+	@echo "Installing fsck.hfs+..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(MAN8DIR)
+	install -m 755 build/standalone/fsck.hfs+ $(DESTDIR)$(SBINDIR)/fsck.hfs+
+	install -m 644 doc/man/fsck.hfs+.8 $(DESTDIR)$(MAN8DIR)/fsck.hfs+.8
+
+# mount utilities
+install-mount.hfs:
+	@echo "Installing mount.hfs..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(MAN8DIR)
+	install -m 755 src/mount/mount.hfs $(DESTDIR)$(SBINDIR)/mount.hfs
+	install -m 644 doc/man/mount.hfs.8 $(DESTDIR)$(MAN8DIR)/mount.hfs.8
+
+install-mount.hfs+:
+	@echo "Installing mount.hfs+..."
+	install -d $(DESTDIR)$(SBINDIR)
+	install -d $(DESTDIR)$(MAN8DIR)
+	install -m 755 src/mount/mount.hfs+ $(DESTDIR)$(SBINDIR)/mount.hfs+
+	install -m 644 doc/man/mount.hfs+.8 $(DESTDIR)$(MAN8DIR)/mount.hfs+.8
+
+# ============================================================================
+# GROUP INSTALL TARGETS (all utilities of one type)
+# ============================================================================
+
+install-mkfs: install-mkfs.hfs install-mkfs.hfs+
+	@echo "All mkfs utilities installed"
+
+install-fsck: install-fsck.hfs install-fsck.hfs+
+	@echo "All fsck utilities installed"
+
+install-mount: install-mount.hfs install-mount.hfs+
+	@echo "All mount utilities installed"
+
+# ============================================================================
+# SET INSTALL TARGETS (complete toolsets)
+# ============================================================================
+
+install-set-hfs: install-mkfs.hfs install-fsck.hfs install-mount.hfs
+	@echo "HFS toolset installed (mkfs.hfs, fsck.hfs, mount.hfs)"
+
+install-set-hfsplus: install-mkfs.hfs+ install-fsck.hfs+ install-mount.hfs+
+	@echo "Creating .hfsplus symlinks..."
+	ln -sf mkfs.hfs+ $(DESTDIR)$(SBINDIR)/mkfs.hfsplus
+	ln -sf fsck.hfs+ $(DESTDIR)$(SBINDIR)/fsck.hfsplus
+	ln -sf mount.hfs+ $(DESTDIR)$(SBINDIR)/mount.hfsplus
+	ln -sf mkfs.hfs+.8 $(DESTDIR)$(MAN8DIR)/mkfs.hfsplus.8
+	ln -sf fsck.hfs+.8 $(DESTDIR)$(MAN8DIR)/fsck.hfsplus.8
+	ln -sf mount.hfs+.8 $(DESTDIR)$(MAN8DIR)/mount.hfsplus.8
+	@echo "HFS+ toolset installed (mkfs.hfs+, fsck.hfs+, mount.hfs+ + .hfsplus symlinks)"
+
+# ============================================================================
+# UNINSTALL TARGETS
+# ============================================================================
+
+uninstall-mkfs.hfs:
+	rm -f $(DESTDIR)$(SBINDIR)/mkfs.hfs
+	rm -f $(DESTDIR)$(MAN8DIR)/mkfs.hfs.8
+
+uninstall-mkfs.hfs+:
+	rm -f $(DESTDIR)$(SBINDIR)/mkfs.hfs+
+	rm -f $(DESTDIR)$(MAN8DIR)/mkfs.hfs+.8
+
+uninstall-fsck.hfs:
+	rm -f $(DESTDIR)$(SBINDIR)/fsck.hfs
+	rm -f $(DESTDIR)$(MAN8DIR)/fsck.hfs.8
+
+uninstall-fsck.hfs+:
+	rm -f $(DESTDIR)$(SBINDIR)/fsck.hfs+
+	rm -f $(DESTDIR)$(MAN8DIR)/fsck.hfs+.8
+
+uninstall-mount.hfs:
+	rm -f $(DESTDIR)$(SBINDIR)/mount.hfs
+	rm -f $(DESTDIR)$(MAN8DIR)/mount.hfs.8
+
+uninstall-mount.hfs+:
+	rm -f $(DESTDIR)$(SBINDIR)/mount.hfs+
+	rm -f $(DESTDIR)$(MAN8DIR)/mount.hfs+.8
+
+uninstall-set-hfs: uninstall-mkfs.hfs uninstall-fsck.hfs uninstall-mount.hfs
+	@echo "HFS toolset uninstalled"
+
+uninstall-set-hfsplus: uninstall-mkfs.hfs+ uninstall-fsck.hfs+ uninstall-mount.hfs+
+	rm -f $(DESTDIR)$(SBINDIR)/mkfs.hfsplus
+	rm -f $(DESTDIR)$(SBINDIR)/fsck.hfsplus
+	rm -f $(DESTDIR)$(SBINDIR)/mount.hfsplus
+	rm -f $(DESTDIR)$(MAN8DIR)/mkfs.hfsplus.8
+	rm -f $(DESTDIR)$(MAN8DIR)/fsck.hfsplus.8
+	rm -f $(DESTDIR)$(MAN8DIR)/mount.hfsplus.8
+	@echo "HFS+ toolset uninstalled"
+
+.PHONY: all standalone symlinks clean distclean install-mkfs.hfs install-mkfs.hfs+ install-fsck.hfs install-fsck.hfs+ install-mount.hfs install-mount.hfs+ install-mkfs install-fsck install-mount install-set-hfs install-set-hfsplus uninstall-mkfs.hfs uninstall-mkfs.hfs+ uninstall-fsck.hfs uninstall-fsck.hfs+ uninstall-mount.hfs uninstall-mount.hfs+ uninstall-set-hfs uninstall-set-hfsplus test help libhfs librsrc hfsck mkfs.hfs fsck.hfs mount.hfs

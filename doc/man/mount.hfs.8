@@ -1,0 +1,139 @@
+.TH MOUNT.HFS 8 "December 2025" "hfsutils 3.2.6" "System Manager's Manual"
+.SH NAME
+mount.hfs \- mount an HFS filesystem
+
+.SH SYNOPSIS
+.B mount.hfs
+[\fB\-o\fR \fIoptions\fR]
+[\fB\-r\fR]
+[\fB\-w\fR]
+[\fB\-v\fR]
+.I device mountpoint
+.br
+.B mount.hfs
+[\fB\-h\fR|\fB\-\-help\fR]
+.br
+.B mount.hfs
+[\fB\-V\fR|\fB\-\-version\fR]
+
+.SH DESCRIPTION
+.B mount.hfs
+mounts an HFS filesystem located on
+.I device
+at the specified
+.I mountpoint.
+This utility is typically called by
+.BR mount (8)
+when the filesystem type is specified as
+.BR hfs ,
+but can also be used standalone.
+
+.B mount.hfs
+validates that the device contains a valid HFS filesystem by checking
+the filesystem signature before attempting to mount.
+
+.SH OPTIONS
+.TP
+.BI \-o " options"
+Mount options as a comma-separated list. Common options include:
+.BR ro " (read-only),"
+.BR rw " (read-write),"
+.BR sync " (synchronous I/O),"
+.BR async " (asynchronous I/O),"
+.BR noexec " (don't allow execution),"
+.BR nosuid " (don't honor suid/sgid bits),"
+.BR nodev " (don't interpret device files)."
+
+.TP
+.B \-r
+Mount the filesystem read-only. Equivalent to
+.BR "\-o ro" .
+
+.TP
+.B \-w
+Mount the filesystem read-write. Equivalent to
+.BR "\-o rw" .
+This is the default.
+
+.TP
+.B \-v
+Verbose output. Display mount operations and results.
+
+.TP
+.BR \-h ", " \-\-help
+Display usage information and exit.
+
+.TP
+.BR \-V ", " \-\-version
+Display version information and exit.
+
+.SH EXIT STATUS
+.TP
+.B 0
+Success. The filesystem was mounted successfully.
+
+.TP
+.B 1
+Incorrect invocation or permissions error. This includes invalid options,
+insufficient permissions, or missing arguments.
+
+.TP
+.B 32
+Mount failure. The device does not contain a valid HFS filesystem, the
+mountpoint does not exist, or the kernel does not support HFS filesystems.
+
+.SH FILES
+.TP
+.I /etc/fstab
+Filesystem table. Can contain HFS filesystem entries.
+
+.TP
+.I /etc/mtab
+Mounted filesystems table.
+
+.SH EXAMPLES
+Mount an HFS filesystem:
+.PP
+.RS
+.B mount.hfs /dev/sdb1 /mnt/hfs
+.RE
+
+Mount read-only:
+.PP
+.RS
+.B mount.hfs \-r /dev/sdb1 /mnt/hfs
+.RE
+
+Mount with explicit options:
+.PP
+.RS
+.B mount.hfs \-o ro,sync /dev/sdb1 /mnt/hfs
+.RE
+
+.SH NOTES
+HFS support requires the
+.B hfs
+kernel module. If mounting fails with "filesystem type not supported,"
+load the kernel module:
+.PP
+.RS
+.B modprobe hfs
+.RE
+
+HFS filesystems have a date limit of 2028-02-06 (Y2K28 problem). Files
+created after this date may not be represented correctly.
+
+For HFS+ filesystems, use
+.BR mount.hfs+ (8)
+instead.
+
+.SH SEE ALSO
+.BR mount (8),
+.BR mount.hfs+ (8),
+.BR mkfs.hfs (8),
+.BR fsck.hfs (8),
+.BR umount (8),
+.BR fstab (5)
+
+.SH AUTHOR
+hfsutils project
