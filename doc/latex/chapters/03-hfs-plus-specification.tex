@@ -365,47 +365,230 @@ xxd -s $ALTOFFSET -l 2 -p volume.hfsplus
 Expected: 482b (same as primary)
 \end{verbatim}
 
-\section{HFS+ B-Trees}
+\section{HFS+ B-Trees - Complete Node and Record Structures}
 
-HFS+ uses B-trees extensively for efficient data organization. All B-trees follow the same structure but contain different record types.
+HFS+ uses B-trees for \textbf{all metadata organization}: Catalog, Extents, Attributes.
 
-\subsection{B-Tree Structure}
+\subsection{B-Tree Node Structure - 14-Byte Node Descriptor}
 
-Each B-tree consists of:
+\textbf{Every B-tree node begins with a 14-byte descriptor}:
+
+\begin{longtable}{llllp{5cm}}
+\toprule
+\textbf{Offset} & \textbf{Field} & \textbf{Type} & \textbf{Size} & \textbf{Description} \\
+\midrule
+\endhead
++0 & fLink & uint32 & 4 & Forward link (next node, 0 = none) \\
++4 & bLink & uint32 & 4 & Backward link (prev node, 0 = none) \\
++8 & kind & int8 & 1 & Node type (see below) \\
++9 & height & uint8 & 1 & Level in tree (0 = leaf) \\
++10 & numRecords & uint16 & 2 & Number of records in node \\
++12 & reserved & uint16 & 2 & Reserved (must be 0) \\
+\bottomrule
+\caption{BTNodeDescriptor (14 bytes)}
+\end{longtable}
+
+\subsubsection{kind - Node Type Values}
+
+\begin{longtable}{lp{8cm}}
+\toprule
+\textbf{Value} & \textbf{Node Type} \\
+\midrule
+\endhead
+-1 & Leaf node (contains data records) \\
+0 & Index node (contains child pointers) \\
+1 & Header node (B-tree metadata, always node 0) \\
+2 & Map node (allocation bitmap) \\
+\bottomrule
+\caption{B-tree Node Types}
+\end{longtable}
+
+\textbf{Byte example for header node (kind=1)}:
+\begin{verbatim}
+Offset +8: 0x01 (header node)
+Offset +9: 0x00 (height 0, not used in header)
+Offset +10-11: 0x00 0x03 (3 records typical: header, user data, map)
+\end{verbatim}
+
+\subsection{BTHeaderRec - B-Tree Header Record (106 Bytes)}
+
+Located in the \textbf{first record of node 0 (header node)} in every B-tree.
+
+\begin{longtable}{llllp{5cm}}
+\toprule
+\textbf{Offset} & \textbf{Field} & \textbf{Type} & \textbf{Size} & \textbf{Description} \\
+\midrule
+\endhead
++0 & treeDepth & uint16 & 2 & Current depth (1 = only root) \\
++2 & rootNode & uint32 & 4 & Root node number \\
++6 & leafRecords & uint32 & 4 & Total leaf records \\
++10 & firstLeafNode & uint32 & 4 & First leaf node number \\
++14 & lastLeafNode & uint32 & 4 & Last leaf node number \\
++18 & nodeSize & uint16 & 2 & Node size in bytes \\
++20 & maxKeyLength & uint16 & 2 & Maximum key length \\
++22 & totalNodes & uint32 & 4 & Total nodes allocated \\
++26 & freeNodes & uint32 & 4 & Number of free nodes \\
++30 & reserved1 & uint16 & 2 & Reserved \\
++32 & clumpSize & uint32 & 4 & Clump size for B-tree file \\
++36 & btreeType & uint8 & 1 & B-tree type (0=HFS, 128=HFS+) \\
++37 & keyCompareType & uint8 & 1 & Key comparison type \\
++38 & attributes & uint32 & 4 & B-tree attributes (flags) \\
++42 & reserved3 & uint32[16] & 64 & Reserved (must be 0) \\
+\bottomrule
+\caption{BTHeaderRec Structure (106 bytes total)}
+\end{longtable}
+
+\textbf{Total size verification}: 2 + 4 + 4 + 4 + 4 + 2 + 2 + 4 + 4 + 2 + 4 + 1 + 1 + 4 + 64 = 106 bytes
+
+\subsubsection{Critical BTHeaderRec Field Details}
+
+\textbf{treeDepth} (Offset +0):
 \begin{itemize}
-    \item \textbf{Header node}: B-tree metadata (first node, index 0)
-    \item \textbf{Map nodes}: Allocation bitmap for B-tree nodes
-    \item \textbf{Index nodes}: Internal nodes with pointers to child nodes
-    \item \textbf{Leaf nodes}: Contain actual data records
+    \item Value 0: Empty tree
+    \item Value 1: Only root node (contains data directly)
+    \item Value 2+: Root is index node
+    \item \textbf{New volume}: Usually 1 (minimal tree)
 \end{itemize}
 
-\subsection{B-Tree Header Record}
+\textbf{nodeSize} (Offset +18):
+\begin{itemize}
+    \item \textbf{HFS+ Standard}: 4096 bytes (4 KB)
+    \item \textbf{HFS+ Large}: 8192 bytes (8 KB)
+    \item Must be power of 2
+    \item Must be $\geq$ 512 bytes
+\end{itemize}
 
-Located in the first node of each B-tree:
+\textbf{Byte representation for 4096}:
+\begin{verbatim}
+Offset +18: 0x10
+Offset +19: 0x00
+(Big-endian: 0x1000 = 4096)
+\end{verbatim}
+
+\textbf{btreeType} (Offset +36):
+\begin{itemize}
+    \item \textbf{0}: HFS B-tree (legacy)
+    \item \textbf{128}: HFS+ B-tree (standard)
+    \item \textbf{255}: Reserved
+\end{itemize}
+
+\textbf{keyCompareType} (Offset +37):
+\begin{itemize}
+    \item \textbf{0xBC}: Case-insensitive (HFS+ default)
+    \item \textbf{0xCF}: Binary compare (HFSX case-sensitive)
+\end{itemize}
+
+\textbf{attributes} (Offset +38, 4 bytes):
+\begin{longtable}{llp{7cm}}
+\toprule
+\textbf{Bit} & \textbf{Hex Mask} & \textbf{Meaning} \\
+\midrule
+\endhead
+0 & 0x00000001 & Bad close (B-tree not closed properly) \\
+1 & 0x00000002 & Big keys (key length $>$ 255 bytes) \\
+2 & 0x00000004 & Variable index keys \\
+3-31 & 0xFFFFFFF8 & Reserved (must be 0) \\
+\bottomrule
+\caption{BTHeaderRec attributes Flags}
+\end{longtable}
+
+\subsection{Catalog File B-Tree - Complete Key and Record Formats}
+
+The Catalog File contains \textbf{all files and folders}. It uses \textbf{Unicode HFSUniStr255 keys}.
+
+\subsubsection{HFSPlusCatalogKey - Variable Length}
+
+\begin{longtable}{llllp{5cm}}
+\toprule
+\textbf{Offset} & \textbf{Field} & \textbf{Type} & \textbf{Size} & \textbf{Description} \\
+\midrule
+\endhead
++0 & keyLength & uint16 & 2 & Total key length (excluding this field) \\
++2 & parentID & uint32 & 4 & Parent folder CNID \\
++6 & nodeName & HFSUniStr255 & var & Unicode filename (see below) \\
+\bottomrule
+\caption{HFSPlusCatalogKey Structure}
+\end{longtable}
+
+\subsubsection{HFSUniStr255 - Unicode String (Max 255 UTF-16 Characters)}
 
 \begin{longtable}{llp{6cm}}
 \toprule
-\textbf{Field} & \textbf{Offset} & \textbf{Description} \\
+\textbf{Offset} & \textbf{Field} & \textbf{Description} \\
 \midrule
 \endhead
-treeDepth & +0 & Current depth of tree (1-based) \\
-rootNode & +2 & Node number of root node \\
-leafRecords & +4 & Number of leaf records \\
-firstLeafNode & +8 & Node number of first leaf \\
-lastLeafNode & +12 & Node number of last leaf \\
-nodeSize & +16 & Size of each node (bytes) \\
-maxKeyLength & +18 & Maximum key length \\
-totalNodes & +20 & Total nodes in tree \\
-freeNodes & +24 & Number of free nodes \\
-reserved1 & +28 & Reserved \\
-clumpSize & +32 & Clump size for file \\
-btreeType & +36 & Type of B-tree (0=HFS, 128=HFS+) \\
-keyCompareType & +37 & Key comparison method \\
-attributes & +38 & B-tree attributes \\
-reserved3 & +42 & Reserved (76 bytes) \\
++0 & length & uint16: Number of UTF-16 characters (NOT bytes) \\
++2 & unicode & uint16[]: UTF-16BE characters \\
 \bottomrule
-\caption{B-Tree Header Record}
+\caption{HFSUniStr255 Structure}
 \end{longtable}
+
+\textbf{Example}: Filename "Test.txt" (8 characters)
+\begin{verbatim}
+length:  0x0008 (8 UTF-16 chars)
+unicode: 
+  0x0054 ('T')
+  0x0065 ('e')
+  0x0073 ('s')
+  0x0074 ('t')
+  0x002E ('.')
+  0x0074 ('t')
+  0x0078 ('x')
+  0x0074 ('t')
+Total: 2 + (8*2) = 18 bytes for nodeName
+\end{verbatim}
+
+\textbf{Complete catalog key for "Test.txt" in root (CNID 2)}:
+\begin{verbatim}
+keyLength: 0x0016 (22 bytes: 4 parentID + 18 nodeName)
+parentID:  0x00000002 (root folder)
+nodeName:  [18 bytes as shown above]
+Total key: 2 + 22 = 24 bytes
+\end{verbatim}
+
+\subsubsection{Catalog Record Types - 4 Types}
+
+\begin{longtable}{llp{7cm}}
+\toprule
+\textbf{Type} & \textbf{Value} & \textbf{Description} \\
+\midrule
+\endhead
+kHFSPlusFolderRecord & 0x0001 & Folder (directory) \\
+kHFSPlusFileRecord & 0x0002 & File \\
+kHFSPlusFolderThreadRecord & 0x0003 & Folder thread (CNID $\rightarrow$ name) \\
+kHFSPlusFileThreadRecord & 0x0004 & File thread (CNID $\rightarrow$ name) \\
+\bottomrule
+\caption{Catalog Record Type Values}
+\end{longtable}
+
+\subsubsection{HFSPlusCatalogFile - File Record (248 Bytes)}
+
+\begin{longtable}{llllp{5cm}}
+\toprule
+\textbf{Offset} & \textbf{Field} & \textbf{Type} & \textbf{Size} & \textbf{Description} \\
+\midrule
+\endhead
++0 & recordType & int16 & 2 & \textbf{0x0002} (file) \\
++2 & flags & uint16 & 2 & File flags \\
++4 & reserved1 & uint32 & 4 & Reserved \\
++8 & fileID & uint32 & 4 & Catalog Node ID (CNID) \\
++12 & createDate & uint32 & 4 & Creation date (HFS+ time) \\
++16 & contentModDate & uint32 & 4 & Content modification date \\
++20 & attributeModDate & uint32 & 4 & Attribute modification date \\
++24 & accessDate & uint32 & 4 & Last access date \\
++28 & backupDate & uint32 & 4 & Backup date \\
++32 & permissions & HFSPlusBSDInfo & 16 & BSD ownership/permissions \\
++48 & userInfo & FInfo & 16 & Finder user info \\
++64 & finderInfo & FXInfo & 16 & Finder extended info \\
++80 & textEncoding & uint32 & 4 & Text encoding hint \\
++84 & reserved2 & uint32 & 4 & Reserved \\
++88 & dataFork & HFSPlusForkData & 80 & Data fork descriptor \\
++168 & resourceFork & HFSPlusForkData & 80 & Resource fork descriptor \\
+\bottomrule
+\caption{HFSPlusCatalogFile Structure (248 bytes total)}
+\end{longtable}
+
+\textbf{Total size verification}: 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 16 + 16 + 16 + 4 + 4 + 80 + 80 = 248 bytes
 
 \subsection{Catalog File}
 
@@ -469,31 +652,6 @@ B-tree storing extended attributes (metadata) for files and folders.
     \item Compressed data (HFS+ compression)
 \end{itemize}
 
-\section{Journaling}
-
-HFS+ supports optional journaling for filesystem consistency after crashes.
-
-\subsection{Journal Structure}
-
-\begin{itemize}
-    \item \textbf{Journal Info Block}: Located at block specified in Volume Header
-    \item \textbf{Journal Buffer}: Circular buffer of transactions
-    \item \textbf{Transaction Records}: Logged filesystem changes
-\end{itemize}
-
-\subsection{Journal Operation}
-
-\begin{enumerate}
-    \item \textbf{Begin Transaction}: Start logging changes
-    \item \textbf{Log Metadata Changes}: Write changes to journal buffer
-    \item \textbf{Commit Transaction}: Mark transaction complete
-    \item \textbf{Apply Changes}: Write changes to filesystem
-    \item \textbf{Release Transaction}: Free journal space
-\end{enumerate}
-
-\subsection{Journal Replay}
-
-After unclean unmount:
 \begin{enumerate}
     \item fsck.hfs+ detects journal
     \item Scans journal for uncommitted transactions
