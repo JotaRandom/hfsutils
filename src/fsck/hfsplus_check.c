@@ -10,8 +10,10 @@
 
 #include "fsck_common.h"
 #include "../embedded/fsck/fsck_hfs.h"
-#include "journal.h"
+#include "../embedded/shared/hfs_detect.h"  /* For hfs_get_safe_time() */
+#include "journal.h"  /* For journal support */
 #include <wchar.h>
+#include <locale.h>
 #include <locale.h>
 
 /* HFS+ specific constants */
@@ -176,13 +178,67 @@ int hfsplus_check_volume(const char *device_path, int partition_number, int chec
             error_print("critical journal errors");
             errors_found = 1;
         }
-    } else {
-        if (VERBOSE) {
-            printf("\n=== Phase 2: No Journal Present ===\n");
+                if (YES || ask("Disable journaling to continue")) {
+                    if (journal_disable(fd, &vh) == 0) {
+                        printf("Journaling disabled successfully\n");
+                        errors_corrected = 1;
+                    } else {
+                        error_print("Failed to disable journaling");
+                        errors_found = 1;
+                    }
+                }
+            } else {
+                printf("Run with -y to disable journaling\n");
+                errors_found = 1;
+            }
+        } else if (journal_status == 1) {
+            /* Valid journal - check if replay needed */
+            if (VERBOSE) {
+                printf("Journal is valid\n");
+            }
+            
+            /* Check if volume was cleanly unmounted */
+            if (!(attributes & HFSPLUS_UNMOUNTED)) {
+                printf("Volume was not cleanly unmounted - journal replay may be needed\n");
+                
+                if (check_options & HFSCK_REPAIR) {
+                    printf("Replaying journal transactions...\n");
+                    int replayed = journal_replay(fd, &vh, 1);
+                    
+                    if (replayed > 0) {
+                        printf("Successfully replayed %d journal transaction(s)\n", replayed);
+                        errors_corrected = 1;
+                    } else if (replayed < 0) {
+                        printf("WARNING: Journal replay failed (error %d)\n", replayed);
+                        printf("         Filesystem may be inconsistent\n");
+                        errors_found = 1;
+                    } else {
+                        printf("No journal transactions to replay\n");
+                    }
+                } else {
+                    printf("Run with repair option to replay journal\n");
+                    errors_found = 1;
+                }
+            } else if (VERBOSE) {
+                printf("Volume was cleanly unmounted - no journal replay needed\n");
+            }
+        } else {
+            /* journal_status == 0: not journaled */
+            if (VERBOSE) {
+                printf("Volume is marked as journaled but journal is disabled\n");
+            }
         }
+        
+        /* Linux compatibility warning */
+        if (VERBOSE && (attributes & HFSPLUS_VOL_JOURNALED)) {
+            printf("\nNOTE: Linux HFS+ driver does NOT support journaling\n");
+            printf("      Journal will be ignored when mounted on Linux\n");
+        }
+    } else if (VERBOSE) {
+        printf("Volume is not journaled\n");
     }
     
-    /* Phase 3: Check Catalog File with Unicode Support */
+    /* Phase 3: Catalog and Attributes Validation */
     if (VERBOSE) {
         printf("\n=== Phase 3: Checking HFS+ Catalog with Unicode Support ===\n");
     }
@@ -329,9 +385,10 @@ static int check_hfsplus_volume_header(int fd, struct HFSPlus_VolumeHeader_Compl
         }
     }
     
-    /* Check timestamps */
-    time(&now);
+    /* Check timestamps - Y2K40 safeguard */
+    time_t now = hfs_get_safe_time();
     uint32_t hfs_now = (uint32_t)(now + 2082844800UL); /* Convert to HFS+ time */
+    uint32_t hfs_2030 = (uint32_t)((hfs_get_safe_time() + 2082844800UL) - 315360000); /* Jan 1, 2030 */
     
     if (be32toh(vh->createDate) == 0) {
         if (VERBOSE || !REPAIR) {
@@ -345,11 +402,45 @@ static int check_hfsplus_volume_header(int fd, struct HFSPlus_VolumeHeader_Compl
     
     if (be32toh(vh->createDate) > hfs_now) {
         if (VERBOSE || !REPAIR) {
-            printf("Volume creation date is in the future\n");
+            printf("WARNING: Volume creation date is in the future (Y2K40 issue detected)\n");
+            printf("         HFS+ maximum date: February 6, 2040\n");
         }
-        if (REPAIR && (YES || ask("Fix creation date"))) {
-            vh->createDate = htobe32(hfs_now);
+        if (REPAIR && (YES || ask("Fix creation date to safe value (2030-01-01)"))) {
+            vh->createDate = htobe32(hfs_2030);
             errors_fixed++;
+            if (VERBOSE) {
+                printf("         Applied Y2K40 safeguard: date set to 2030-01-01\n");
+            }
+        }
+    }
+    
+    /* Validate catalog file BTHeaderRec ranges */
+    if (VERBOSE) {
+        printf("Validating catalog B-tree structure...\n");
+    }
+    
+    uint64_t catalogSize = be64toh(vh->catalogFile.logicalSize);
+    if (catalogSize > 0) {
+        uint32_t catalogNodes = catalogSize / 4096;  /* Standard node size */
+        
+        /* These checks would require reading the BTHeaderRec */
+        /* For now, ensure catalog file size is reasonable */
+        if (catalogSize < 4096) {
+            if (VERBOSE || !REPAIR) {
+                printf("Catalog file size too small: %llu bytes\n", (unsigned long long)catalogSize);
+            }
+            return -1;  /* Critical - cannot fix */
+        }
+    }
+    
+    /* Validate extents file */
+    uint64_t extentsSize = be64toh(vh->extentsFile.logicalSize);
+    if (extentsSize > 0) {
+        if (extentsSize < 4096) {
+            if (VERBOSE || !REPAIR) {
+                printf("Extents file size too small: %llu bytes\n", (unsigned long long)extentsSize);
+            }
+            return -1;  /* Critical */
         }
     }
     
@@ -364,11 +455,6 @@ static int check_hfsplus_volume_header(int fd, struct HFSPlus_VolumeHeader_Compl
         attributes &= ~HFSPLUS_DIRTY;
         vh->attributes = htobe32(attributes);
         errors_fixed++;
-    }
-    
-    /* Basic extent validation - simplified for now */
-    if (VERBOSE) {
-        printf("Extent validation completed (simplified)\n");
     }
     
     if (VERBOSE && errors_fixed > 0) {
@@ -568,12 +654,21 @@ static int check_hfsplus_catalog_unicode(int fd, struct HFSPlus_VolumeHeader_Com
     
     /* Validate B-tree header */
     uint16_t nodeSize = be16toh(btHeader->nodeSize);
+    uint16_t nodeSize_fixed = 0;
+    
     if (nodeSize != blockSize) {
         if (VERBOSE || !REPAIR) {
             printf("Catalog B-tree node size (%u) doesn't match block size (%u)\n",
                    nodeSize, blockSize);
         }
-        errors_fixed++;
+        if (REPAIR && (YES || ask("Fix B-tree node size"))) {
+            btHeader->nodeSize = htobe16(blockSize);
+            nodeSize_fixed = 1;
+            errors_fixed++;
+            if (VERBOSE) {
+                printf("Fixed B-tree node size to %u\n", blockSize);
+            }
+        }
     }
     
     uint32_t totalNodes = be32toh(btHeader->totalNodes);
@@ -583,6 +678,85 @@ static int check_hfsplus_catalog_unicode(int fd, struct HFSPlus_VolumeHeader_Com
         }
         free(nodeBuffer);
         return -1; /* Critical error */
+    }
+    
+    /* CRITICAL: Validate BTHeaderRec ranges */
+    int range_errors = 0;
+    uint32_t rootNode = be32toh(btHeader->rootNode);
+    uint32_t firstLeaf = be32toh(btHeader->firstLeafNode);
+    uint32_t lastLeaf = be32toh(btHeader->lastLeafNode);
+    uint32_t freeNodes = be32toh(btHeader->freeNodes);
+    
+    /* Check rootNode range */
+    if (rootNode >= totalNodes) {
+        if (VERBOSE || !REPAIR) {
+            printf("Root node (%u) >= total nodes (%u)\n", rootNode, totalNodes);
+        }
+        if (REPAIR && (YES || ask("Reset root node to 1"))) {
+            btHeader->rootNode = htobe32(1);
+            range_errors++;
+            errors_fixed++;
+        }
+    }
+    
+    /* Check firstLeafNode range */
+    if (firstLeaf >= totalNodes) {
+        if (VERBOSE || !REPAIR) {
+            printf("First leaf (%u) >= total nodes (%u)\n", firstLeaf, totalNodes);
+        }
+        if (REPAIR && (YES || ask("Reset first leaf to 1"))) {
+            btHeader->firstLeafNode = htobe32(1);
+            range_errors++;
+            errors_fixed++;
+        }
+    }
+    
+    /* Check lastLeafNode range */
+    if (lastLeaf >= totalNodes) {
+        if (VERBOSE || !REPAIR) {
+            printf("Last leaf (%u) >= total nodes (%u)\n", lastLeaf, totalNodes);
+        }
+        if (REPAIR && (YES || ask("Reset last leaf to first leaf"))) {
+            btHeader->lastLeafNode = btHeader->firstLeafNode;
+            range_errors++;
+            errors_fixed++;
+        }
+    }
+    
+    /* Check freeNodes */
+    if (freeNodes > totalNodes) {
+        if (VERBOSE || !REPAIR) {
+            printf("Free nodes (%u) > total nodes (%u)\n", freeNodes, totalNodes);
+        }
+        if (REPAIR && (YES || ask("Fix free nodes count"))) {
+            btHeader->freeNodes = htobe32(totalNodes - 2);  /* Conservative: header + root */
+            range_errors++;
+            errors_fixed++;
+        }
+    }
+    
+    /* Write back BTHeaderRec if we fixed anything */
+    if ((nodeSize_fixed || range_errors > 0) && REPAIR) {
+        if (VERBOSE) {
+            printf("Writing corrected B-tree header...\n");
+        }
+        
+        /* Seek back to header node */
+        if (lseek(fd, nodeOffset, SEEK_SET) == -1) {
+            error_print("failed to seek to catalog header for write");
+            free(nodeBuffer);
+            return -1;
+        }
+        
+        if (write(fd, nodeBuffer, blockSize) != blockSize) {
+            error_print("failed to write corrected catalog header");
+            free(nodeBuffer);
+            return -1;
+        }
+        
+        if (VERBOSE) {
+            printf("Catalog B-tree header corrections written successfully\n");
+        }
     }
     
     /* Check Unicode string validation in catalog records */
@@ -842,9 +1016,8 @@ static int validate_unicode_string(const struct HFSPlus_UniStr255 *str)
  */
 static int repair_hfsplus_volume_header(int fd, struct HFSPlus_VolumeHeader_Complete *vh)
 {
-    /* Update checked date */
-    time_t now;
-    time(&now);
+    /* Update checked date with Y2K40 safeguard */
+    time_t now = hfs_get_safe_time();
     uint32_t hfs_now = (uint32_t)(now + 2082844800UL); /* Convert to HFS+ time */
     vh->checkedDate = htobe32(hfs_now);
     

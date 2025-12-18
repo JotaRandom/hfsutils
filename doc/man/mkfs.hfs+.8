@@ -44,12 +44,13 @@ Better performance on large volumes
 Force formatting. Required when formatting the entire medium (partition 0)
 if it currently contains a partition map.
 .TP
-.BI -l " label"
-Specify the volume label. Must be 1-255 characters for HFS+.
+.BI "-L, -l" " label"
+Specify the volume label. Primary option is -L (Unix standard), but -l
+is also accepted for compatibility. Must be 1-255 characters for HFS+.
 .TP
 .BI -s " size"
 Specify the filesystem size in bytes. If not specified, the entire device
-or partition will be used.
+or partition will be used. Supports K, M, G suffixes (e.g., 100M, 1G).
 .TP
 .B --version
 Display version information and exit.
@@ -75,6 +76,20 @@ longer filenames with full Unicode support.
 .PP
 This command creates modern HFS+ filesystems compatible with macOS and
 other systems that support HFS+.
+.PP
+.B LINUX COMPATIBILITY WARNING:
+The Linux kernel HFS+ driver (hfsplus.ko) does NOT support journaling.
+Volumes created with this tool are non-journaled by default and are
+fully compatible with Linux. Do NOT use the -j flag (if implemented)
+for volumes intended to be mounted on Linux systems.
+.SH EXIT STATUS
+The program follows Unix standards for exit codes:
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Any error (use -v for detailed error information).
 .SH SEE ALSO
 mkfs(8), mkfs.hfs(8), fsck.hfs+(8), hfsutils(1)
 .SH AUTHOR

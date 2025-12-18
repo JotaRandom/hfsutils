@@ -32,8 +32,9 @@ typedef struct {
     int show_version;
     int show_help;
     int show_license;
-    size_t block_size;
-    size_t total_size;
+    int block_size;       /* Block size (0 = auto-calculate) */
+    long long total_size; /* Total size in bytes (0 = use full device) */
+    int enable_journaling; /* Enable HFS+ journaling (0 = disabled, 1 = enabled) */
 } mkfs_options_t;
 
 /* Main formatting functions */

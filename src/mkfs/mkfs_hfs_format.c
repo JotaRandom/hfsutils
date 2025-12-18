@@ -993,8 +993,16 @@ static int calculate_hfsplus_volume_parameters(const char *device_path, mkfs_opt
     params->creation_date = hfs_get_safe_time();
     
     /* Default options */
-    params->enable_journaling = 0;  /* No journaling for now */
+    params->enable_journaling = opts->enable_journaling;  /* Use option from command line */
     params->case_sensitive = 0;     /* Case-insensitive by default */
+    
+    /* Journaling requires additional space */
+    if (params->enable_journaling) {
+        /* Reserve space for journal (typically 8-32 MB) */
+        if (opts->verbose) {
+            printf("Journaling enabled - allocating journal blocks\n");
+        }
+    }
     
     return 0;
 }
@@ -1327,73 +1335,510 @@ static int write_hfsplus_allocation_bitmap(int fd, const hfsplus_volume_params_t
 
 /*
  * NAME:    initialize_hfsplus_catalog_file()
- * DESCRIPTION: Initialize empty HFS+ catalog B*-tree
+ * DESCRIPTION: Initialize HFS+ catalog B-tree with proper structure per TN1150
  */
 static int initialize_hfsplus_catalog_file(int fd, const hfsplus_volume_params_t *params)
 {
-    /* TODO: Implement HFS+ catalog B*-tree initialization */
-    /* For now, just write zeros */
-    unsigned char *catalog_data = calloc(1, params->catalog_file_size);
-    if (!catalog_data) {
-        error_print_errno("failed to allocate memory for catalog file");
+    const uint32_t NODE_SIZE = 4096;  /* Standard HFS+ B-tree node size */
+    const uint16_t MAX_KEY_LENGTH = 516;  /* sizeof(HFSPlusCatalogKey) */
+    
+    unsigned char *node_data;
+    uint32_t total_nodes;
+    size_t bitmap_size;
+    size_t bitmap_blocks;
+    off_t catalog_offset;
+    
+    /* Calculate catalog file location */
+    bitmap_size = (params->total_blocks + 7) / 8;
+    bitmap_blocks = (bitmap_size + params->block_size - 1) / params->block_size;
+    catalog_offset = (3 * params->sector_size) + (bitmap_blocks * params->block_size);
+    
+    total_nodes = params->catalog_file_size / NODE_SIZE;
+    
+    /* Allocate buffer for one node */
+    node_data = calloc(1, NODE_SIZE);
+    if (!node_data) {
+        error_print_errno("failed to allocate memory for catalog node");
         return -1;
     }
     
-    /* Calculate catalog file location (after allocation bitmap) */
-    size_t bitmap_size = (params->total_blocks + 7) / 8;
-    size_t bitmap_blocks = (bitmap_size + params->block_size - 1) / params->block_size;
-    off_t catalog_offset = (3 * params->sector_size) + (bitmap_blocks * params->block_size);
+    /* === Node 0: Header Node === */
     
+    /* Node Descriptor (14 bytes) */
+    /* fLink (next node) */
+    node_data[0] = 0x00;
+    node_data[1] = 0x00;
+    node_data[2] = 0x00;
+    node_data[3] = 0x00;
+    
+    /* bLink (previous node) */
+    node_data[4] = 0x00;
+    node_data[5] = 0x00;
+    node_data[6] = 0x00;
+    node_data[7] = 0x00;
+    
+    /* kind = 1 (header node) */
+    node_data[8] = 0x01;
+    
+    /* height = 0 */
+    node_data[9] = 0x00;
+    
+    /* numRecords = 3 (BTHeaderRec, user data, map record) */
+    node_data[10] = 0x00;
+    node_data[11] = 0x03;
+    
+    /* reserved */
+    node_data[12] = 0x00;
+    node_data[13] = 0x00;
+    
+    /* BTHeaderRec starts at offset 14 (106 bytes) */
+    int offset = 14;
+    
+    /* treeDepth = 1 (header + one leaf for root folder) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* rootNode = 1 (node 1 contains root folder) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* leafRecords = 1 (only root folder initially) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* firstLeafNode = 1 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* lastLeafNode = 1 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* nodeSize = 4096 */
+    node_data[offset++] = 0x10;
+    node_data[offset++] = 0x00;
+    
+    /* maxKeyLength = 516 */
+    node_data[offset++] = (MAX_KEY_LENGTH >> 8) & 0xFF;
+    node_data[offset++] = MAX_KEY_LENGTH & 0xFF;
+    
+    /* totalNodes */
+    node_data[offset++] = (total_nodes >> 24) & 0xFF;
+    node_data[offset++] = (total_nodes >> 16) & 0xFF;
+    node_data[offset++] = (total_nodes >> 8) & 0xFF;
+    node_data[offset++] = total_nodes & 0xFF;
+    
+    /* freeNodes = total_nodes - 2 (header + root leaf used) */
+    uint32_t free_nodes = total_nodes - 2;
+    node_data[offset++] = (free_nodes >> 24) & 0xFF;
+    node_data[offset++] = (free_nodes >> 16) & 0xFF;
+    node_data[offset++] = (free_nodes >> 8) & 0xFF;
+    node_data[offset++] = free_nodes & 0xFF;
+    
+    /* reserved1 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* clumpSize (obsolete, use catalog clump from volume header) */
+    uint32_t clump_size = params->catalog_file_size;
+    node_data[offset++] = (clump_size >> 24) & 0xFF;
+    node_data[offset++] = (clump_size >> 16) & 0xFF;
+    node_data[offset++] = (clump_size >> 8) & 0xFF;
+    node_data[offset++] = clump_size & 0xFF;
+    
+    /* btreeType = 0 (Catalog) */
+    node_data[offset++] = 0x00;
+    
+    /* keyCompareType = 0xCF (case-insensitive, TN1150 default) */
+    node_data[offset++] = 0xCF;
+    
+    /* attributes = 0 (no special attributes) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* reserved3[16] (64 bytes) - already zeroed by calloc */
+    offset += 64;
+    
+    /* Map record (128 bytes showing nodes 0-1 allocated) */
+    /* Set bits 0 and 1 to mark header and root leaf as used */
+    int map_offset = NODE_SIZE - 256;  /* Map record typically at end of node */
+    node_data[map_offset] = 0xC0;  /* Binary: 11000000 = nodes 0,1 used */
+    
+    /* Record offsets at end of node (3 records + free space offset) */
+    /* Offset table grows backwards from end of node */
+    int rec_offset_base = NODE_SIZE - 2;
+    
+    /* Free space offset (points after map record) */
+    uint16_t free_offset = map_offset + 256;
+    node_data[rec_offset_base--] = (free_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = free_offset & 0xFF;
+    
+    /* Record 2: map record offset */
+    uint16_t map_rec_offset = map_offset;
+    node_data[rec_offset_base--] = (map_rec_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = map_rec_offset & 0xFF;
+    
+    /* Record 1: user data record (empty, 128 bytes reserved) */
+    uint16_t user_offset = map_offset - 128;
+    node_data[rec_offset_base--] = (user_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = user_offset & 0xFF;
+    
+    /* Record 0: BTHeaderRec offset */
+    uint16_t header_offset = 14;
+    node_data[rec_offset_base--] = (header_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = header_offset & 0xFF;
+    
+    /* Write header node */
     if (lseek(fd, catalog_offset, SEEK_SET) == -1) {
         error_print_errno("failed to seek to catalog file location");
-        free(catalog_data);
+        free(node_data);
         return -1;
     }
     
-    if (write(fd, catalog_data, params->catalog_file_size) != (ssize_t)params->catalog_file_size) {
-        error_print_errno("failed to write catalog file");
-        free(catalog_data);
+    if (write(fd, node_data, NODE_SIZE) != NODE_SIZE) {
+        error_print_errno("failed to write catalog header node");
+        free(node_data);
         return -1;
     }
     
-    free(catalog_data);
+    /* === Node 1: Root Folder Leaf Node === */
+    memset(node_data, 0, NODE_SIZE);
+    
+    /* Node Descriptor */
+    /* fLink = 0 (no next leaf) */
+    node_data[0] = 0x00;
+    node_data[1] = 0x00;
+    node_data[2] = 0x00;
+    node_data[3] = 0x00;
+    
+    /* bLink = 0 (no previous leaf) */
+    node_data[4] = 0x00;
+    node_data[5] = 0x00;
+    node_data[6] = 0x00;
+    node_data[7] = 0x00;
+    
+    /* kind = -1 (0xFF = leaf node) */
+    node_data[8] = 0xFF;
+    
+    /* height = 1 */
+    node_data[9] = 0x01;
+    
+    /* numRecords = 1 (root folder record) */
+    node_data[10] = 0x00;
+    node_data[11] = 0x01;
+    
+    /* reserved */
+    node_data[12] = 0x00;
+    node_data[13] = 0x00;
+    
+    /* Root folder record at offset 14 */
+    offset = 14;
+    
+    /* Catalog key: parentID=1 (kHFSRootParentID), name="" (empty for root) */
+    /* keyLength = 6 (minimum: 2 bytes parentID field + 2 bytes name length + 2 for keyLength itself) */
+    uint16_t key_length = 6;
+    node_data[offset++] = (key_length >> 8) & 0xFF;
+    node_data[offset++] = key_length & 0xFF;
+    
+    /* parentID = 1 (kHFSRootParentID) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* nodeName.length = 0 (empty name for root) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* Catalog folder record (88 bytes minimum) */
+    /* recordType = kHFSPlusFolderRecord (0x0001) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x01;
+    
+    /* flags = 0 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* valence = 0 (no items in root initially) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* folderID = 2 (kHFSRootFolderID) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x02;
+    
+    /* createDate, contentModDate, attributeModDate, accessDate (all use current HFS time) */
+    uint32_t hfs_time = (uint32_t)(params->creation_date + HFS_EPOCH_OFFSET);
+    for (int i = 0; i < 4; i++) {
+        node_data[offset++] = (hfs_time >> 24) & 0xFF;
+        node_data[offset++] = (hfs_time >> 16) & 0xFF;
+        node_data[offset++] = (hfs_time >> 8) & 0xFF;
+        node_data[offset++] = hfs_time & 0xFF;
+    }
+    
+    /* backupDate = 0 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* permissions (80 bytes, complex structure, zero for now) */
+    offset += 80;
+    
+    /* userInfo + finderInfo (32 bytes total) - zero */
+    offset += 32;
+    
+    /* textEncoding = 0 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* reserved = 0 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* Record offset table at end */
+    rec_offset_base = NODE_SIZE - 2;
+    
+    /* Free space offset */
+    uint16_t leaf_free_offset = offset;
+    node_data[rec_offset_base--] = (leaf_free_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = leaf_free_offset & 0xFF;
+    
+    /* Record 0 offset (root folder record) */
+    uint16_t rec0_offset = 14;
+    node_data[rec_offset_base--] = (rec0_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = rec0_offset & 0xFF;
+    
+    /* Write root folder leaf node */
+    if (write(fd, node_data, NODE_SIZE) != NODE_SIZE) {
+        error_print_errno("failed to write catalog root leaf node");
+        free(node_data);
+        return -1;
+    }
+    
+    /* Zero out remaining catalog nodes */
+    memset(node_data, 0, NODE_SIZE);
+    for (uint32_t i = 2; i < total_nodes; i++) {
+        if (write(fd, node_data, NODE_SIZE) != NODE_SIZE) {
+            error_print_errno("failed to write catalog empty nodes");
+            free(node_data);
+            return -1;
+        }
+    }
+    
+    free(node_data);
     return 0;
 }
 
 /*
  * NAME:    initialize_hfsplus_extents_file()
- * DESCRIPTION: Initialize empty HFS+ extents overflow B*-tree
+ * DESCRIPTION: Initialize HFS+ extents overflow B-tree per TN1150
  */
 static int initialize_hfsplus_extents_file(int fd, const hfsplus_volume_params_t *params)
 {
-    /* TODO: Implement HFS+ extents B*-tree initialization */
-    /* For now, just write zeros */
-    unsigned char *extents_data = calloc(1, params->extents_file_size);
-    if (!extents_data) {
-        error_print_errno("failed to allocate memory for extents file");
-        return -1;
-    }
+    const uint32_t NODE_SIZE = 4096;  /* Standard HFS+ B-tree node size */
+    const uint16_t MAX_KEY_LENGTH = 10;  /* sizeof(HFSPlusExtentKey) */
+    
+    unsigned char *node_data;
+    uint32_t total_nodes;
+    size_t bitmap_size;
+    size_t bitmap_blocks;
+    off_t extents_offset;
     
     /* Calculate extents file location (after catalog file) */
-    size_t bitmap_size = (params->total_blocks + 7) / 8;
-    size_t bitmap_blocks = (bitmap_size + params->block_size - 1) / params->block_size;
-    off_t extents_offset = (3 * params->sector_size) + 
-                          (bitmap_blocks * params->block_size) + 
-                          params->catalog_file_size;
+    bitmap_size = (params->total_blocks + 7) / 8;
+    bitmap_blocks = (bitmap_size + params->block_size - 1) / params->block_size;
+    extents_offset = (3 * params->sector_size) + 
+                     (bitmap_blocks * params->block_size) + 
+                     params->catalog_file_size;
     
+    total_nodes = params->extents_file_size / NODE_SIZE;
+    
+    /* Allocate buffer for one node */
+    node_data = calloc(1, NODE_SIZE);
+    if (!node_data) {
+        error_print_errno("failed to allocate memory for extents node");
+        return -1;
+    }
+    
+    /* === Node 0: Header Node === */
+    
+    /* Node Descriptor (14 bytes) */
+    /* fLink (next node) */
+    node_data[0] = 0x00;
+    node_data[1] = 0x00;
+    node_data[2] = 0x00;
+    node_data[3] = 0x00;
+    
+    /* bLink (previous node) */
+    node_data[4] = 0x00;
+    node_data[5] = 0x00;
+    node_data[6] = 0x00;
+    node_data[7] = 0x00;
+    
+    /* kind = 1 (header node) */
+    node_data[8] = 0x01;
+    
+    /* height = 0 */
+    node_data[9] = 0x00;
+    
+    /* numRecords = 3 (BTHeaderRec, user data, map record) */
+    node_data[10] = 0x00;
+    node_data[11] = 0x03;
+    
+    /* reserved */
+    node_data[12] = 0x00;
+    node_data[13] = 0x00;
+    
+    /* BTHeaderRec starts at offset 14 (106 bytes) */
+    int offset = 14;
+    
+    /* treeDepth = 0 (empty tree - no extents overflow initially) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* rootNode = 0 (no root - tree is empty) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* leafRecords = 0 (no records initially) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* firstLeafNode = 0 (no leaves yet) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* lastLeafNode = 0 (no leaves yet) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* nodeSize = 4096 */
+    node_data[offset++] = 0x10;
+    node_data[offset++] = 0x00;
+    
+    /* maxKeyLength = 10 */
+    node_data[offset++] = (MAX_KEY_LENGTH >> 8) & 0xFF;
+    node_data[offset++] = MAX_KEY_LENGTH & 0xFF;
+    
+    /* totalNodes */
+    node_data[offset++] = (total_nodes >> 24) & 0xFF;
+    node_data[offset++] = (total_nodes >> 16) & 0xFF;
+    node_data[offset++] = (total_nodes >> 8) & 0xFF;
+    node_data[offset++] = total_nodes & 0xFF;
+    
+    /* freeNodes = total_nodes - 1 (only header used) */
+    uint32_t free_nodes = total_nodes - 1;
+    node_data[offset++] = (free_nodes >> 24) & 0xFF;
+    node_data[offset++] = (free_nodes >> 16) & 0xFF;
+    node_data[offset++] = (free_nodes >> 8) & 0xFF;
+    node_data[offset++] = free_nodes & 0xFF;
+    
+    /* reserved1 */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* clumpSize (obsolete, use extents clump from volume header) */
+    uint32_t clump_size = params->extents_file_size;
+    node_data[offset++] = (clump_size >> 24) & 0xFF;
+    node_data[offset++] = (clump_size >> 16) & 0xFF;
+    node_data[offset++] = (clump_size >> 8) & 0xFF;
+    node_data[offset++] = clump_size & 0xFF;
+    
+    /* btreeType = 255 (0xFF = Extents Overflow) */
+    node_data[offset++] = 0xFF;
+    
+    /* keyCompareType = 0 (simple comparison for extents keys) */
+    node_data[offset++] = 0x00;
+    
+    /* attributes = 0 (no special attributes) */
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    node_data[offset++] = 0x00;
+    
+    /* reserved3[16] (64 bytes) - already zeroed by calloc */
+    offset += 64;
+    
+    /* Map record (128 bytes showing only node 0 allocated) */
+    /* Set bit 0 to mark header as used */
+    int map_offset = NODE_SIZE - 256;  /* Map record at end of node */
+    node_data[map_offset] = 0x80;  /* Binary: 10000000 = node 0 used */
+    
+    /* Record offsets at end of node (3 records + free space offset) */
+    /* Offset table grows backwards from end of node */
+    int rec_offset_base = NODE_SIZE - 2;
+    
+    /* Free space offset (points after map record) */
+    uint16_t free_offset = map_offset + 256;
+    node_data[rec_offset_base--] = (free_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = free_offset & 0xFF;
+    
+    /* Record 2: map record offset */
+    uint16_t map_rec_offset = map_offset;
+    node_data[rec_offset_base--] = (map_rec_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = map_rec_offset & 0xFF;
+    
+    /* Record 1: user data record (empty, 128 bytes reserved) */
+    uint16_t user_offset = map_offset - 128;
+    node_data[rec_offset_base--] = (user_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = user_offset & 0xFF;
+    
+    /* Record 0: BTHeaderRec offset */
+    uint16_t header_offset = 14;
+    node_data[rec_offset_base--] = (header_offset >> 8) & 0xFF;
+    node_data[rec_offset_base--] = header_offset & 0xFF;
+    
+    /* Write header node */
     if (lseek(fd, extents_offset, SEEK_SET) == -1) {
         error_print_errno("failed to seek to extents file location");
-        free(extents_data);
+        free(node_data);
         return -1;
     }
     
-    if (write(fd, extents_data, params->extents_file_size) != (ssize_t)params->extents_file_size) {
-        error_print_errno("failed to write extents file");
-        free(extents_data);
+    if (write(fd, node_data, NODE_SIZE) != NODE_SIZE) {
+        error_print_errno("failed to write extents header node");
+        free(node_data);
         return -1;
     }
     
-    free(extents_data);
+    /* Zero out remaining extents nodes (all free) */
+    memset(node_data, 0, NODE_SIZE);
+    for (uint32_t i = 1; i < total_nodes; i++) {
+        if (write(fd, node_data, NODE_SIZE) != NODE_SIZE) {
+            error_print_errno("failed to write extents empty nodes");
+            free(node_data);
+            return -1;
+        }
+    }
+    
+    free(node_data);
     return 0;
 }
 

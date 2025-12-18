@@ -9,14 +9,18 @@ fsck.hfs \- check and repair an HFS filesystem
 .RI [ partition-no ]
 .SH DESCRIPTION
 .B fsck.hfs
-checks an HFS (Hierarchical File System) filesystem and optionally repairs
-any errors found. This is the standard Unix filesystem checking utility
-for HFS filesystems.
+checks an HFS (Hierarchical File System) or HFS+ filesystem and optionally
+repairs any errors found. This is the standard Unix filesystem checking utility
+for HFS and HFS+ filesystems.
+.PP
+The program automatically detects the filesystem type. If an HFS+ filesystem
+is detected, it will automatically delegate to
+.B fsck.hfs+
+for proper handling.
 .PP
 The
 .I device
-argument specifies the block device or file containing the HFS filesystem
-to be checked.
+argument specifies the block device or file containing the filesystem to be checked.
 .PP
 If the filesystem is mounted, only a read-only check will be performed unless
 the
@@ -84,6 +88,19 @@ to ensure data integrity during the check and repair process.
 .PP
 Regular filesystem checking helps maintain data integrity and can
 prevent data loss due to filesystem corruption.
+.PP
+.B AUTOMATIC FILESYSTEM DETECTION:
+This program automatically detects whether the filesystem is HFS or HFS+.
+If an HFS+ filesystem is detected, the program will automatically delegate
+to
+.B fsck.hfs+
+for proper handling. This ensures that the correct checker is always used
+regardless of which fsck program was initially invoked.
+.PP
+.B Note:
+Automatic delegation to fsck.hfs+ requires that fsck.hfs+ is installed
+on the system. If fsck.hfs+ is not found, an error message will be displayed
+with instructions on how to proceed.
 .SH SEE ALSO
 fsck(8), fsck.hfs+(8), mkfs.hfs(8), hfsutils(1)
 .SH AUTHOR

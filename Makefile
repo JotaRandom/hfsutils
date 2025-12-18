@@ -40,12 +40,14 @@ $(shell mkdir -p $(OBJDIR))
 # Executables (symlinks to hfsutil)
 EXECUTABLES = hattrib hcd hcopy hdel hformat hls hmkdir hmount hpwd hrename hrmdir humount hvol
 
-# Filesystem utilities (separate binaries with symlinks)
-FSCK_LINKS = fsck.hfs fsck.hfs+ fsck.hfsplus
-MKFS_LINKS = mkfs.hfs mkfs.hfs+ mkfs.hfsplus
-MOUNT_LINKS = mount.hfs mount.hfs+ mount.hfsplus
+# Filesystem utility symlinks (only .hfsplus variants are symlinks)
+# mkfs.hfs and mkfs.hfs+ are separate binaries
+# fsck.hfs and fsck.hfs+ are separate binaries
+FSCK_LINKS = fsck.hfsplus
+MKFS_LINKS = mkfs.hfsplus
+MOUNT_LINKS = mount.hfsplus
 
-# Standalone utilities
+# Standalone utilities (separate binaries, not symlinks)
 STANDALONE_UTILITIES = mkfs.hfs fsck.hfs mount.hfs
 
 # Default target - just build hfsutil without symlinks
@@ -267,23 +269,18 @@ install-symlinks: install
 	for prog in $(EXECUTABLES) hdir; do \
 		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
 	done
-	# Create filesystem utility symlinks (smart path detection)
+	# Create .hfsplus symlink (fsck.hfsplus -> fsck.hfs+)
 	@if [ "$(SBINDIR)" = "$(BINDIR)" ]; then \
-		echo "Creating filesystem utility symlinks for merged /bin system..."; \
-		for prog in $(FSCK_LINKS); do \
-			ln -sf hfsck $(DESTDIR)$(BINDIR)/$$prog; \
-		done; \
+		echo "Creating .hfsplus symlinks for merged /bin system..."; \
+		ln -sf fsck.hfs+ $(DESTDIR)$(BINDIR)/fsck.hfsplus; \
 	else \
-		echo "Creating filesystem utility symlinks for separate /sbin system..."; \
-		for prog in $(FSCK_LINKS); do \
-			ln -sf ../sbin/hfsck $(DESTDIR)$(BINDIR)/$$prog; \
-		done; \
+		echo "Creating .hfsplus symlinks for separate /sbin system..."; \
+		ln -sf fsck.hfs+ $(DESTDIR)$(SBINDIR)/fsck.hfsplus; \
 	fi
-	for prog in $(MKFS_LINKS); do \
-		ln -sf hfsutil $(DESTDIR)$(BINDIR)/$$prog; \
-	done
+	# Create mkfs.hfsplus symlink (mkfs.hfsplus -> mkfs.hfs+)
+	ln -sf mkfs.hfs+ $(DESTDIR)$(SBINDIR)/mkfs.hfsplus
 	@echo "Created symlinks for traditional command names"
-	@echo "Created symlinks for filesystem utilities (fsck.hfs, mkfs.hfs, etc.)"
+	@echo "Created .hfsplus symlinks (fsck.hfsplus -> fsck.hfs+, mkfs.hfsplus -> mkfs.hfs+)"
 
 # Old test target (disabled - using new test targets now)
 # test: all

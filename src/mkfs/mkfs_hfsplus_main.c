@@ -39,7 +39,8 @@ static mkfs_options_t default_options = {
     .show_help = 0,
     .show_license = 0,
     .block_size = 0,  /* Auto-calculate */
-    .total_size = 0   /* Use full device */
+    .total_size = 0,  /* Use full device */
+    .enable_journaling = 0  /* Disabled by default with warning */
 };
 
 
@@ -56,7 +57,9 @@ static void usage(int exit_code)
     printf("\n");
     printf("Options:\n");
     printf("  -f, --force          Force creation, overwrite existing filesystem\n");
-    printf("  -l, --label NAME     Set volume label/name (max 255 characters for HFS+)\n");
+    printf("  -j, --journal        Enable HFS+ journaling (Linux kernel driver does NOT support)\n");
+    printf("  -L, --label NAME     Set volume label/name (also accepts -l)\n");
+    printf("  -s, --size SIZE      Specify filesystem size in bytes (supports K, M, G suffixes)\n");
     printf("  -v, --verbose        Display detailed formatting information\n");
     printf("  -V, --version        Display version information\n");
     printf("  -h, --help           Display this help message\n");
@@ -69,6 +72,7 @@ static void usage(int exit_code)
     printf("Examples:\n");
     printf("  %s /dev/sdb1                    # Format partition as HFS+\n", program_name);
     printf("  %s -l \"My Volume\" /dev/sdb1     # Format with custom label\n", program_name);
+    printf("  %s -s 1073741824 disk.img       # Create 1GB filesystem\n", program_name);
     printf("  %s -f /dev/sdb 1                # Force format partition 1\n", program_name);
     printf("  %s -f /dev/sdb 0                # Format entire disk (erases partition table)\n", program_name);
     printf("  %s -v /dev/fd0                  # Format floppy with verbose output\n", program_name);
@@ -82,10 +86,10 @@ static void usage(int exit_code)
     printf("\n");
     printf("Exit codes:\n");
     printf("  0   Success\n");
-    printf("  1   General error\n");
-    printf("  2   Usage error\n");
-    printf("  4   Operational error\n");
-    printf("  8   System error\n");
+    printf("  1   Error (any kind)\n");
+    printf("\n");
+    printf("Note: Exit codes follow Unix standard (0=success, 1=error).\n");
+    printf("      Use -v for detailed error information.\n");
     printf("\n");
     
     exit(exit_code);
@@ -166,5 +170,13 @@ int main(int argc, char *argv[])
     mkfs_cleanup_options(&opts);
     common_cleanup();
     
-    return result;
+    /* Normalize exit code to Unix standard (0=success, 1=any error) */
+    /* Preserve detailed code in verbose mode for debugging */
+    if (result != 0) {
+        if (opts.verbose) {
+            fprintf(stderr, "Internal exit code: %d\n", result);
+        }
+        return 1;  /* Unix standard: any error = exit code 1 */
+    }
+    return 0;
 }

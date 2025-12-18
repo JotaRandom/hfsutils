@@ -62,8 +62,8 @@ static void show_usage(const char *program_name)
     printf("  %s -n /dev/sdb1           Check without making changes\n", program_name);
     printf("  %s -a /dev/sdb1           Check and auto-repair\n", program_name);
     printf("\n");
-    printf("Note: This program only works with HFS filesystems.\n");
-    printf("      For HFS+ filesystems, use fsck.hfs+ instead.\n");
+    printf("Note: This program automatically detects the filesystem type.\n");
+    printf("      HFS+ filesystems are automatically delegated to fsck.hfs+.\n");
     printf("\n");
 }
 
@@ -156,14 +156,59 @@ int main(int argc, char *argv[])
         return FSCK_OPERATIONAL_ERROR;
     }
     
-    /* Validate filesystem type matches program type - HFS only */
+    /* Handle filesystem type - delegate to appropriate checker */
     if (fs_type != FS_TYPE_HFS) {
         const char *detected_name = hfs_get_fs_type_name(fs_type);
-        error_print("filesystem type mismatch: detected %s filesystem", detected_name);
-        error_print("This program only works with HFS filesystems.");
+        
+        /* If HFS+ or HFSX detected, automatically delegate to fsck.hfs+ */
         if (fs_type == FS_TYPE_HFSPLUS || fs_type == FS_TYPE_HFSX) {
-            error_print("For HFS+ filesystems, use fsck.hfs+ instead.");
+            if (opts.verbose) {
+                printf("Detected %s filesystem, delegating to fsck.hfs+...\n", detected_name);
+            }
+            
+            /* Build new argv for fsck.hfs+ */
+            char **new_argv = malloc((argc + 1) * sizeof(char *));
+            if (!new_argv) {
+                error_print("failed to allocate memory for delegation");
+                fsck_cleanup_options(&opts);
+                common_cleanup();
+                return FSCK_OPERATIONAL_ERROR;
+            }
+            
+            /* Replace program name with fsck.hfs+ */
+            new_argv[0] = "fsck.hfs+";
+            for (int i = 1; i < argc; i++) {
+                new_argv[i] = argv[i];
+            }
+            new_argv[argc] = NULL;
+            
+            /* Clean up before exec */
+            fsck_cleanup_options(&opts);
+            common_cleanup();
+            
+            /* Execute fsck.hfs+ */
+            execvp("fsck.hfs+", new_argv);
+            
+            /* If execvp returns, it failed */
+            /* Check if failure was due to missing fsck.hfs+ */
+            if (errno == ENOENT) {
+                fprintf(stderr, "Error: fsck.hfs+ not found in PATH\n");
+                fprintf(stderr, "Cannot check %s filesystem without fsck.hfs+\n", detected_name);
+                fprintf(stderr, "\n");
+                fprintf(stderr, "Options:\n");
+                fprintf(stderr, "  1. Install fsck.hfs+ (build with: make fsck.hfs+)\n");
+                fprintf(stderr, "  2. Use a system that has fsck.hfs+ installed\n");
+                fprintf(stderr, "  3. Mount the volume read-only without checking\n");
+            } else {
+                error_print_errno("failed to execute fsck.hfs+");
+            }
+            free(new_argv);
+            return FSCK_OPERATIONAL_ERROR;
         }
+        
+        /* Unknown or unsupported filesystem type */
+        error_print("unsupported filesystem type: %s", detected_name);
+        error_print("This program only handles HFS and HFS+ filesystems.");
         fsck_cleanup_options(&opts);
         common_cleanup();
         return FSCK_OPERATIONAL_ERROR;

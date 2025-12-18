@@ -50,27 +50,73 @@ hfsck/hfsck
 /humount
 /hvol
 
-# Generated files
-libhfs/config.h
-libhfs/config.log
-libhfs/config.status
-libhfs/os.c
-libhfs/Makefile
-lib/libhfs/config.h
-lib/libhfs/config.log
-lib/libhfs/config.status
-lib/libhfs/os.c
-lib/librsrc/config.h
-lib/librsrc/config.log
-lib/librsrc/config.status
-librsrc/config.h
-librsrc/config.log
-librsrc/config.status
-librsrc/Makefile
-hfsck/.config.h
-hfsck/config.log
-hfsck/config.status
-hfsck/Makefile
+# General
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*~
+.DS_Store
+*.swp
+*.swo
+
+# Build artifacts
+/build/
+/hfsutil
+/hfsck/hfsck
+/libhfs/.libs/
+/librsrc/.libs/
+/libhfs/libhfs.a
+/librsrc/librsrc.a
+autom4te.cache/
+Makefile.in
+aclocal.m4
+compile
+config.guess
+config.h
+config.h.in
+config.log
+config.status
+config.sub
+configure
+depcomp
+install-sh
+libtool
+ltmain.sh
+missing
+stamp-h1
+.deps/
+.dirstamp
+
+# macOS
+.DS_Store
+*.dmg
+
+# Test artifacts - DO NOT commit test images
+*.img
+test_*.img
+/tmp/
+/test/tmp/
+/test/**/*.img
+/test/**/test_*
+/tests/**/*.img
+/tests/**/test_*
+hfsutils.log
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Documentation builds
+doc/html/
+doc/latex/file
 linux/Makefile
 
 # Test data and temporary files

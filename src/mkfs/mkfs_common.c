@@ -136,7 +136,8 @@ int mkfs_parse_command_line(int argc, char *argv[], mkfs_options_t *opts, int is
     int c;
     static struct option long_options[] = {
         {"force",   no_argument,       0, 'f'},
-        {"label",   required_argument, 0, 'l'},
+        {"label",   required_argument, 0, 'L'},  /* Primary: -L per Unix convention */
+        {"size",    required_argument, 0, 's'},
         {"verbose", no_argument,       0, 'v'},
         {"version", no_argument,       0, 'V'},
         {"help",    no_argument,       0, 'h'},
@@ -144,7 +145,9 @@ int mkfs_parse_command_line(int argc, char *argv[], mkfs_options_t *opts, int is
         {0, 0, 0, 0}
     };
     
-    const char *optstring = "fl:vVh";
+    /* HFS+ supports -s option, HFS does not */
+    /* Configure getopt_long options based on filesystem type */
+    const char *optstring = is_hfsplus ? "fj:l:L:s:vVh" : "fl:L:vVh";
     
     while ((c = getopt_long(argc, argv, optstring, long_options, NULL)) != -1) {
         switch (c) {
@@ -152,7 +155,8 @@ int mkfs_parse_command_line(int argc, char *argv[], mkfs_options_t *opts, int is
                 opts->force = 1;
                 break;
                 
-            case 'l':
+            case 'l':  /* Legacy/alternative */
+            case 'L':  /* Unix standard */
                 opts->volume_name = strdup(optarg);
                 if (!opts->volume_name) {
                     error_print_errno("failed to allocate memory for volume name");
@@ -169,7 +173,41 @@ int mkfs_parse_command_line(int argc, char *argv[], mkfs_options_t *opts, int is
                 }
                 break;
                 
-
+            case 'j':
+                /* Journaling option only for HFS+ */
+                if (!is_hfsplus) {
+                    error_print("-j option is only supported for HFS+");
+                    return -1;
+                }
+                opts->enable_journaling = 1;
+                
+                /* WARNING: Linux HFS+ driver does NOT support journaling */
+                fprintf(stderr, "\\n");
+                fprintf(stderr, "WARNING: HFS+ journaling enabled\\n");
+                fprintf(stderr, "=========================================\\n");
+                fprintf(stderr, "The Linux HFS+ kernel driver does NOT support journaling.\\n");
+                fprintf(stderr, "Journaled volumes will:  \\n");
+                fprintf(stderr, "  - Mount as NO_JOURNAL on Linux\\n");
+                fprintf(stderr, "  - Work correctly on macOS/Darwin\\n");
+                fprintf(stderr, "  - Require fsck on Linux if unclean unmount\\n");
+                fprintf(stderr, "\\n");
+                fprintf(stderr, "For Linux-only use, journaling is NOT recommended.\\n");
+                fprintf(stderr, "=========================================\\n");
+                fprintf(stderr, "\\n");
+                break;
+                
+            case 's':
+                /* Size option only for HFS+ */
+                if (!is_hfsplus) {
+                    error_print("-s option is only supported for HFS+");
+                    return -1;
+                }
+                opts->total_size = mkfs_parse_size(optarg, is_hfsplus);
+                if (opts->total_size < 0) {
+                    error_print("invalid size specification: %s", optarg);
+                    return -1;
+                }
+                break;
                 
             case 'v':
                 opts->verbose = 1;

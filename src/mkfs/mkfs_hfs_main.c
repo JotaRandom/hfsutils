@@ -345,5 +345,13 @@ int main(int argc, char *argv[])
     cleanup_options(&opts);
     common_cleanup();
     
-    return result;
+    /* Normalize exit code to Unix standard (0=success, 1=any error) */
+    /* Preserve detailed code in verbose mode for debugging */
+    if (result != 0) {
+        if (opts.verbose) {
+            fprintf(stderr, "Internal exit code: %d\n", result);
+        }
+        return 1;  /* Unix standard: any error = exit code 1 */
+    }
+    return 0;
 }

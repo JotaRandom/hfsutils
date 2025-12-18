@@ -41,8 +41,9 @@ contains a partition map.
 Force formatting. Required when formatting the entire medium (partition 0)
 if it currently contains a partition map.
 .TP
-.BI -l " label"
-Specify the volume label. Must be 1-27 characters and cannot contain colons.
+.BI "-L, -l" " label"
+Specify the volume label. Primary option is -L (Unix standard), but -l
+is also accepted for compatibility. Must be 1-27 characters and cannot contain colons.
 .TP
 .B --version
 Display version information and exit.
@@ -64,6 +65,14 @@ The smallest volume size which can be formatted is 800K.
 .PP
 This command does not create or alter partition maps, although it can erase
 them when using partition 0 with the -f option.
+.SH EXIT STATUS
+The program follows Unix standards for exit codes:
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Any error (use -v for detailed error information).
 .SH SEE ALSO
 mkfs(8), mkfs.hfs+(8), fsck.hfs(8), hfsutils(1)
 .SH AUTHOR
