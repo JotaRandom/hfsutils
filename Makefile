@@ -59,6 +59,30 @@ standalone: $(STANDALONE_UTILITIES)
 # Alternative target that avoids autotools completely
 build-manual: libhfs librsrc hfsck-manual hfsutil
 
+# Set targets - build complete toolsets
+.PHONY: set-hfs set-hfsplus
+
+# HFS toolset: mkfs.hfs, fsck.hfs, mount.hfs
+set-hfs: standalone
+	@echo "Building HFS toolset (mkfs.hfs, fsck.hfs, mount.hfs)..."
+	$(MAKE) -C src/mkfs mkfs.hfs
+	$(MAKE) -C src/fsck fsck.hfs  
+	$(MAKE) -C src/mount mount.hfs
+	@echo "HFS toolset complete"
+
+# HFS+ toolset: mkfs.hfs+, fsck.hfs+, mount.hfs+ (with .hfsplus symlinks)
+set-hfsplus: standalone
+	@echo "Building HFS+ toolset (mkfs.hfs+, fsck.hfs+, mount.hfs+)..."
+	$(MAKE) -C src/mkfs mkfs.hfs+
+	$(MAKE) -C src/fsck fsck.hfs+
+	$(MAKE) -C src/mount mount.hfs+
+	@echo "Creating .hfsplus symlinks..."
+	cd build/standalone && ln -sf mkfs.hfs+ mkfs.hfsplus
+	cd build/standalone && ln -sf fsck.hfs+ fsck.hfsplus
+	cd build/standalone && ln -sf mount.hfs+ mount.hfsplus
+	@echo "HFS+ toolset complete"
+
+
 # Target to create symlinks for backward compatibility
 symlinks: hfsutil $(EXECUTABLES) hdir $(MKFS_LINKS) $(FSCK_LINKS)
 

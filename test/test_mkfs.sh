@@ -185,3 +185,80 @@ echo "  - HFS+ creation and validation"
 echo "  - Spec compliance verified"
 echo "  - fsck validation successful"
 echo "========================================="
+
+#
+# MOUNT TESTS (optional - depend on kernel drivers)
+#
+if [ -f "$BUILD/mount.hfs" ] && [ -f "$BUILD/mount.hfs+" ]; then
+    echo ""
+    echo "=== Mount Tests (require kernel drivers) ==="
+    
+    # Test 1: HFS mount
+    echo "[1/2] Testing mount.hfs..."
+    MOUNT_TEST="$TMP/mount_test"
+    mkdir -p "$MOUNT_TEST"
+    
+    # Try to mount HFS volume
+    if $BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" 2>&1 | grep -q "not supported"; then
+        echo "  ⚠ HFS kernel driver not available (expected on some systems)"
+    elif $BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" 2>&1 | grep -q "permission denied"; then
+        echo "  ⚠ Permission denied (run as root to test mount)"
+    elif $BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" >/dev/null 2>&1; then
+        echo "  ✓ HFS mount successful"
+        # Verify mount worked
+        if mount | grep -q "$MOUNT_TEST"; then
+            echo "  ✓ HFS volume is mounted"
+            umount "$MOUNT_TEST" 2>/dev/null || true
+        else
+            echo "  FAIL: mount.hfs returned success but volume not mounted!"
+            exit 1
+        fi
+    else
+        # Mount failed for other reason
+        err=$($BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" 2>&1)
+        if echo "$err" | grep -q "not a valid HFS"; then
+            echo "  FAIL: Volume validation failed - implementation error!"
+            echo "  Error: $err"
+            exit 1
+        else
+            echo "  ⚠ Mount failed: $err"
+        fi
+    fi
+    
+    # Test 2: HFS+ mount
+    echo "[2/2] Testing mount.hfs+..."
+    
+    # Try to mount HFS+ volume
+    if $BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" 2>&1 | grep -q "not supported"; then
+        echo "  ⚠ HFS+ kernel driver not available (expected on some systems)"
+    elif $BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" 2>&1 | grep -q "permission denied"; then
+        echo "  ⚠ Permission denied (run as root to test mount)"
+    elif $BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" >/dev/null 2>&1; then
+        echo "  ✓ HFS+ mount successful"
+        # Verify mount worked
+        if mount | grep -q "$MOUNT_TEST"; then
+            echo "  ✓ HFS+ volume is mounted"
+            umount "$MOUNT_TEST" 2>/dev/null || true
+        else
+            echo "  FAIL: mount.hfs+ returned success but volume not mounted!"
+            exit 1
+        fi
+    else
+        # Mount failed for other reason
+        err=$($BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" 2>&1)
+        if echo "$err" | grep -q "not a valid HFS+"; then
+            echo "  FAIL: Volume validation failed - implementation error!"
+            echo "  Error: $err"
+            exit 1
+        else
+            echo "  ⚠ Mount failed: $err"
+        fi
+    fi
+    
+    rmdir "$MOUNT_TEST" 2>/dev/null || true
+    echo "✓ Mount tests complete"
+else
+    echo ""
+    echo "⚠ mount.hfs/mount.hfs+ not found - skipping mount tests"
+fi
+
