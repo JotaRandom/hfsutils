@@ -1,16 +1,331 @@
-\section{hfsutil Commands}
+\chapter{hfsutil Commands}
 
-\textit{This chapter will include hfsutil command documentation.}
+This chapter documents the hfsutil suite of commands for interactive manipulation of HFS/HFS+ volumes without mounting.
 
-\subsection{Commands}
+\section{Overview}
+
+hfsutil provides a set of Unix-like commands for working with HFS and HFS+ volumes directly, similar to mtools for FAT filesystems. All commands operate on unmounted volumes.
+
+\subsection{Common Features}
 \begin{itemize}
-    \item hformat - Format HFS volumes
-    \item hmount - Mount HFS volumes
-    \item humount - Unmount HFS volumes
-    \item hls - List directory contents
-    \item hcopy - Copy files
-    \item hmkdir - Create directories
-    \item And more...
+    \item Work on HFS and HFS+ volumes
+    \item No mounting required
+    \item Unix-style command interface
+    \item Support for both block devices and image files
+    \item MacRoman to UTF-8 conversion
 \end{itemize}
 
-\textbf{Note}: Full content will be converted from doc/man/hfsutils.1 and related manpages
+\section{Volume Management Commands}
+
+\subsection{hformat - Format HFS Volume}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hformat [-l label] device
+\end{verbatim}
+
+\textbf{Description}: Creates a new HFS Classic volume (equivalent to mkfs.hfs).
+
+\textbf{Options}:
+\begin{itemize}
+    \item -l label: Set volume label (1-27 characters)
+    \item device: Block device or file to format
+\end{itemize}
+
+\textbf{Example}:
+\begin{verbatim}
+hformat -l "BackupDisk" /dev/sdb1
+hformat -l "Test" disk.hfs
+\end{verbatim}
+
+\subsection{hmount - Mount HFS Volume (hfsutil context)}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hmount device [partition]
+\end{verbatim}
+
+\textbf{Description}: Register HFS volume for use with other hfsutil commands (does NOT mount to OS).
+
+\textbf{Options}:
+\begin{itemize}
+    \item device: Block device or image file
+    \item partition: Optional partition number (for APM)
+\end{itemize}
+
+\textbf{Example}:
+\begin{verbatim}
+hmount /dev/sdb1
+hmount disk.hfs
+hmount /dev/sdc 2  # Partition 2
+\end{verbatim}
+
+\subsection{humount - Unmount HFS Volume (hfsutil context)}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+humount [device]
+\end{verbatim}
+
+\textbf{Description}: Unregister HFS volume from hfsutil.
+
+\textbf{Example}:
+\begin{verbatim}
+humount
+humount /dev/sdb1
+\end{verbatim}
+
+\subsection{hvol - Display Volume Information}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hvol [device]
+\end{verbatim}
+
+\textbf{Description}: Show volume information (name, creation date, free space, etc.).
+
+\textbf{Example}:
+\begin{verbatim}
+hvol
+# Output:
+# Volume name: MyDisk
+# Volume created: Mon Jan 15 12:00:00 2024
+# Total blocks: 10240
+# Free blocks: 5120
+\end{verbatim}
+
+\section{File Operations Commands}
+
+\subsection{hls - List Directory}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hls [-1abcdefgilmnrstux] [path ...]
+\end{verbatim}
+
+\textbf{Description}: List files and directories (like Unix ls).
+
+\textbf{Common Options}:
+\begin{itemize}
+    \item -l: Long format (permissions, size, date)
+    \item -a: Show all files (including invisible)
+    \item -i: Show file IDs (CNIDs)
+    \item -d: List directory itself, not contents
+    \item -R: Recursive listing
+    \item -1: One file per line
+\end{itemize}
+
+\textbf{Examples}:
+\begin{verbatim}
+hls                    # List current directory
+hls -l                 # Long format
+hls -la /              # All files in root, long format
+hls -R /System         # Recursive list
+\end{verbatim}
+
+\subsection{hcopy - Copy Files}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hcopy [-m|-b|-t|-r] source-path target-path
+hcopy [-m|-b|-t|-r] source-path [...] target-directory
+\end{verbatim}
+
+\textbf{Description}: Copy files to/from HFS volume.
+
+\textbf{Fork Options}:
+\begin{itemize}
+    \item -m: MacBinary format (default, includes both forks)
+    \item -b: Copy both data and resource forks
+    \item -t: Text mode (data fork only, line ending conversion)
+    \item -r: Raw mode (data fork only, no conversion)
+\end{itemize}
+
+\textbf{Examples}:
+\begin{verbatim}
+# Copy from HFS to Unix:
+hcopy :file.txt ./file.txt
+hcopy -r :document.doc ./document.doc
+
+# Copy to HFS:
+hcopy ./readme.txt :README.TXT
+hcopy ./file1 ./file2 :Folder/
+
+# MacBinary format (preserves resource fork):
+hcopy -m :app.bin ./app.bin
+\end{verbatim}
+
+\subsection{hmkdir - Create Directory}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hmkdir path [...]
+\end{verbatim}
+
+\textbf{Description}: Create new directories on HFS volume.
+
+\textbf{Example}:
+\begin{verbatim}
+hmkdir :Documents
+hmkdir :Files :Backup :Archives
+\end{verbatim}
+
+\subsection{hdel - Delete Files/Directories}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hdel path [...]
+\end{verbatim}
+
+\textbf{Description}: Delete files and directories (directories must be empty).
+
+\textbf{Example}:
+\begin{verbatim}
+hdel :oldfile.txt
+hdel :TempFolder
+hdel :file1.doc :file2.doc
+\end{verbatim}
+
+\subsection{hrename - Rename Files}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hrename src-path dest-path
+\end{verbatim}
+
+\textbf{Description}: Rename or move files/directories within volume.
+
+\textbf{Example}:
+\begin{verbatim}
+hrename :oldname.txt :newname.txt
+hrename :File.doc :Archive/File.doc
+\end{verbatim}
+
+\section{Navigation Commands}
+
+\subsection{hcd - Change Directory}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hcd [path]
+\end{verbatim}
+
+\textbf{Description}: Change current directory in HFS volume.
+
+\textbf{Example}:
+\begin{verbatim}
+hcd :Documents
+hcd ..
+hcd /
+\end{verbatim}
+
+\subsection{hpwd - Print Working Directory}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hpwd
+\end{verbatim}
+
+\textbf{Description}: Display current directory path.
+
+\textbf{Example}:
+\begin{verbatim}
+hp
+
+wd
+# Output: :Documents:Projects
+\end{verbatim}
+
+\section{Attribute Commands}
+
+\subsection{hattrib - Show/Modify Attributes}
+
+\textbf{Synopsis}:
+\begin{verbatim}
+hattrib [-t TYPE] [-c CREA] [-i|+i] path [...]
+\end{verbatim}
+
+\textbf{Description}: Display or modify file/folder attributes (type, creator, invisible flag).
+
+\textbf{Options}:
+\begin{itemize}
+    \item -t TYPE: Set file type (4 characters)
+    \item -c CREA: Set creator (4 characters)
+    \item -i: Make invisible
+    \item +i: Make visible
+\end{itemize}
+
+\textbf{Examples}:
+\begin{verbatim}
+hattrib :file.txt              # Show attributes
+hattrib -t TEXT -c EDIT :file.txt  # Set type/creator
+hattrib -i :HiddenFile         # Make invisible
+hattrib +i :NowVisible          # Make visible
+\end{verbatim}
+
+\section{Path Syntax}
+
+\textbf{HFS path format}:
+\begin{itemize}
+    \item : prefix indicates HFS volume path
+    \item : separator between folders (not /)
+    \item Example: :Folder:Subfolder:file.txt
+    \item / is NOT a path separator in HFS
+    \item Root: : or :/
+\end{itemize}
+
+\textbf{Examples}:
+\begin{verbatim}
+:                    # Root directory
+:Documents           # Documents folder in root
+:Docs:file.txt       # file.txt in Docs folder
+..                   # Parent directory
+\end{verbatim}
+
+\section{Character Encoding}
+
+\textbf{HFS uses MacRoman encoding}:
+\begin{itemize}
+    \item hfsutil converts MacRoman $\leftrightarrow$ UTF-8 automatically
+    \item Some characters may not convert perfectly
+    \item Colon (:) forbidden in filenames (path separator)
+\end{itemize}
+
+\section{Workflow Example}
+
+\textbf{Complete workflow for accessing HFS volume}:
+\begin{verbatim}
+# 1. Mount volume to hfsutil
+hmount /dev/sdb1
+
+# 2. Navigate and explore
+hpwd
+hls -la
+hcd :Documents
+
+# 3. Copy files
+hcopy :file.txt ./backup/
+hcopy ./newfile.doc :
+
+# 4. Create directory and organize
+hmkdir :Archive
+hrename :oldfile.txt :Archive/oldfile.txt
+
+# 5. Cleanup
+hdel :tempfile.tmp
+
+# 6. Unmount
+humount
+\end{verbatim}
+
+\section{Testing}
+
+See \texttt{test/test\_hfsutils.sh} for comprehensive tests:
+\begin{itemize}
+    \item Format, mount, unmount sequence
+    \item File creation and deletion
+    \item Directory operations
+    \item Copy to/from volume
+    \item Attribute manipulation
+    \item Path handling
+\end{itemize}
