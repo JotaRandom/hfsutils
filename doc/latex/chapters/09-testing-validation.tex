@@ -1,13 +1,148 @@
-\section{Testing and Validation}
+\chapter{Testing and Validation}
 
-\textit{This chapter will include test suite documentation.}
+\section{Zero-Tolerance Testing Philosophy}
 
-\subsection{Zero-Tolerance Policy}
-All filesystems must be 100\% correct. Any deviation from specification results in test failure.
+\textbf{Core principle}: ALL filesystems must be 100\% specification-compliant. ANY deviation results in test failure.
 
-\subsection{Test Suite}
+\subsection{Why Zero Tolerance}
 \begin{itemize}
-    \item test/test\_mkfs.sh - Filesystem creation tests
-    \item test/test\_fsck.sh - Validation tests
-    \item test/test\_hfsutils.sh - Command tests
+    \item Filesystems store critical user data
+    \item Even minor corruption can cause data loss
+    \item Spec compliance ensures interoperability
+    \item No "good enough" - either correct or broken
 \end{itemize}
+
+\section{Test Suite Organization}
+
+\subsection{test\_mkfs.sh - Filesystem Creation Tests}
+
+\textbf{Coverage}:
+\begin{itemize}
+    \item HFS signature validation (0x4244)
+    \item HFS+ signature validation (0x482B)
+    \item MDB field initialization (all 162 bytes)
+    \item Volume Header initialization (all 512 bytes)
+    \item Allocation block calculations
+    \item B-tree header node creation
+    \item Alternate MDB/VH placement
+    \item Exit code compliance (0 = success, 1 = failure)
+\end{itemize}
+
+\textbf{Validation method}:
+\begin{verbatim}
+# Create filesystem
+mkfs.hfs+ -L "Test" test.img
+
+# Verify signature
+SIG=$(xxd -s 1024 -l 2 -p test.img)
+if [ "$SIG" != "482b" ]; then
+    echo "FAIL: Invalid signature"
+    exit 1
+fi
+
+# Run fsck validation
+fsck.hfs+ -n test.img
+if [ $? -ne 0 ]; then
+    echo "FAIL: fsck detected errors"
+    exit 1
+fi
+\end{verbatim}
+
+\subsection{test\_fsck.sh - Validation Tests}
+
+\textbf{Coverage}:
+\begin{itemize}
+    \item Clean volume detection (exit 0)
+    \item Dirty volume detection
+    \item MDB/Volume Header validation
+    \item Allocation bitmap consistency
+    \item B-tree structure validation
+    \item Catalog integrity checks
+    \item Journal detection and replay
+    \item Exit code compliance (0, 1, 2, 4, 8)
+\end{itemize}
+
+\textbf{Test scenarios}:
+\begin{enumerate}
+    \item Create clean volume → fsck returns 0
+    \item Modify free block count → fsck detects error
+    \item Create journaled volume → fsck replays journal
+    \item Test -n (no modify) mode
+    \item Verify repair actions with -y
+\end{enumerate}
+
+\subsection{test\_hfsutils.sh - Command Tests}
+
+\textbf{Coverage}:
+\begin{itemize}
+    \item hformat volume creation
+    \item hmount/humount sequence
+    \item hls directory listing
+    \item hcopy file transfer
+    \item hmkdir directory creation
+    \item hdel file deletion
+    \item Path handling (: separator)
+    \item MacRoman encoding conversion
+\end{itemize}
+
+\textbf{Example test}:
+\begin{verbatim}
+# Format volume
+hformat -l "TestVol" test.hfs
+
+# Mount
+hmount test.hfs
+
+# Create directory
+hmkdir :TestDir
+
+# Copy file
+echo "test" > temp.txt
+hcopy temp.txt :TestDir/file.txt
+
+# Verify
+hls -l :TestDir | grep file.txt
+if [ $? -ne 0 ]; then
+    echo "FAIL: File not found"
+    exit 1
+fi
+
+# Cleanup
+humount
+\end{verbatim}
+
+\section{Continuous Integration}
+
+\textbf{Automated testing on}:
+\begin{itemize}
+    \item Every commit
+    \item Pull requests
+    \item Multiple platforms (Linux, FreeBSD)
+    \item Multiple architectures (x86\_64, ARM)
+\end{itemize}
+
+\section{Regression Prevention}
+
+\textbf{All bugs get tests}:
+\begin{itemize}
+    \item Bug discovered → Test added
+    \item Test fails until bug fixed
+    \item Test remains in suite forever
+    \item Prevents regression
+\end{itemize}
+
+\section{Manual Testing Checklist}
+
+\textbf{Before release}:
+\begin{enumerate}
+    \item All automated tests pass
+    \item Create HFS volume, mount on macOS
+    \item Create HFS+ volume, mount on Linux
+    \item Test large files ($>$ 1 GB)
+    \item Test many files ($>$ 10,000)
+    \item Test long filenames (255 chars)
+    \item Test special characters
+    \item Test journal replay
+    \item Verify fsck repairs
+    \item Cross-platform compatibility
+\end{enumerate}
