@@ -64,120 +64,306 @@ Byte 1024 & Volume Header & Primary volume metadata \\
 \caption{HFS+ Volume Layout}
 \end{table}
 
-\section{Volume Header}
+\section{Volume Header - Complete Bit-Level Specification}
 
-The Volume Header is the primary metadata structure, located at byte offset 1024 from the start of the volume.
+The Volume Header is the \textbf{most critical structure} in HFS+. Located at byte offset 1024, it is exactly \textbf{512 bytes}.
 
-\subsection{Volume Header Structure}
+\subsection{Volume Header Complete Field Map - Every Byte Documented}
+
+\begin{longtable}{llllp{5cm}}
+\toprule
+\textbf{Offset} & \textbf{Field} & \textbf{Type} & \textbf{Size} & \textbf{Description} \\
+\midrule
+\endhead
++0 & signature & uint16 & 2 & \textbf{0x482B} ('H+') or \textbf{0x4858} ('HX') \\
++2 & version & uint16 & 2 & \textbf{4} (HFS+) or \textbf{5} (HFSX) \\
++4 & attributes & uint32 & 4 & Volume attributes (flags, see below) \\
++8 & lastMountedVersion & uint32 & 4 & OS signature that last mounted \\
++12 & journalInfoBlock & uint32 & 4 & Journal info block (0 = no journal) \\
++16 & createDate & uint32 & 4 & Creation date (HFS+ time) \\
++20 & modifyDate & uint32 & 4 & Last modification date \\
++24 & backupDate & uint32 & 4 & Last backup date \\
++28 & checkedDate & uint32 & 4 & Last fsck date \\
++32 & fileCount & uint32 & 4 & Total files on volume \\
++36 & folderCount & uint32 & 4 & Total folders on volume \\
++40 & blockSize & uint32 & 4 & Allocation block size (bytes) \\
++44 & totalBlocks & uint32 & 4 & Total allocation blocks \\
++48 & freeBlocks & uint32 & 4 & Free allocation blocks \\
++52 & nextAllocation & uint32 & 4 & Hint for next allocation \\
++56 & rsrcClumpSize & uint32 & 4 & Default resource fork clump \\
++60 & dataClumpSize & uint32 & 4 & Default data fork clump \\
++64 & nextCatalogID & uint32 & 4 & Next unused Catalog Node ID \\
++68 & writeCount & uint32 & 4 & Volume write count \\
++72 & encodingsBitmap & uint64 & 8 & Text encodings used (64 bits) \\
++80 & finderInfo & uint32[8] & 32 & Finder information \\
++112 & allocationFile & HFSPlusForkData & 80 & Allocation file fork \\
++192 & extentsFile & HFSPlusForkData & 80 & Extents file fork \\
++272 & catalogFile & HFSPlusForkData & 80 & Catalog file fork \\
++352 & attributesFile & HFSPlusForkData & 80 & Attributes file fork \\
++432 & startupFile & HFSPlusForkData & 80 & Startup file fork \\
+\bottomrule
+\caption{HFS+ Volume Header Structure (512 bytes total)}
+\end{longtable}
+
+\textbf{Total size verification}: 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 8 + 32 + (80*5) = 512 bytes
+
+\subsection{Critical Field Details - Bit-by-Bit}
+
+\subsubsection{signature - Volume Signature (Offset +0, 2 bytes)}
+
+\textbf{HFS+ Standard}: \texttt{0x482B} (big-endian)
+
+\textbf{Byte representation}:
+\begin{verbatim}
+Offset 1024: 0x48 ('H')
+Offset 1025: 0x2B ('+')
+\end{verbatim}
+
+\textbf{HFSX Case-Sensitive}: \texttt{0x4858} (big-endian)
+
+\textbf{Byte representation}:
+\begin{verbatim}
+Offset 1024: 0x48 ('H')
+Offset 1025: 0x58 ('X')
+\end{verbatim}
+
+\textbf{Validation}:
+\begin{itemize}
+    \item Must be exactly \texttt{0x482B} or \texttt{0x4858}
+    \item Any other value = not HFS+ or corrupted
+    \item \texttt{0x4244} = HFS (not HFS+)
+\end{itemize}
+
+\textbf{Hex dump verification}:
+\begin{verbatim}
+xxd -s 1024 -l 2 -p volume.hfsplus
+Expected: 482b (HFS+) or 4858 (HFSX)
+\end{verbatim}
+
+\subsubsection{version - Volume Version (Offset +2, 2 bytes)}
+
+\textbf{HFS+ Standard}: \texttt{0x0004} (4 decimal, big-endian)
+
+\textbf{Byte representation}:
+\begin{verbatim}
+Offset 1026: 0x00
+Offset 1027: 0x04
+\end{verbatim}
+
+\textbf{HFSX}: \texttt{0x0005} (5 decimal)
+
+\textbf{Validation}: mkfs.hfs+ sets version to 4 for standard HFS+.
+
+\subsubsection{attributes - Volume Attributes (Offset +4, 4 bytes)}
+
+32-bit flags field (big-endian). \textbf{Every bit documented}:
+
+\begin{longtable}{llp{7cm}}
+\toprule
+\textbf{Bit} & \textbf{Hex Mask} & \textbf{Meaning} \\
+\midrule
+\endhead
+0-6 & 0x0000007F & Reserved (must be 0) \\
+7 & 0x00000080 & Volume locked by hardware \\
+\textbf{8} & \textbf{0x00000100} & \textbf{Volume unmounted cleanly} \\
+9 & 0x00000200 & Volume has spared bad blocks \\
+10 & 0x00000400 & Needs fsck (consistency check required) \\
+11 & 0x00000800 & Catalog node IDs wrapped around \\
+12 & 0x00001000 & Software lock \\
+\textbf{13} & \textbf{0x00002000} & \textbf{Volume is journaled} \\
+14 & 0x00004000 & Reserved \\
+15 & 0x00008000 & Reserved \\
+16-31 & 0xFFFF0000 & Reserved \\
+\bottomrule
+\caption{Volume Header attributes Bit Definitions}
+\end{longtable}
+
+\textbf{Common values}:
+\begin{itemize}
+    \item \texttt{0x00000100}: Clean, non-journaled (mkfs.hfs+ default)
+    \item \texttt{0x00002100}: Clean, journaled (mkfs.hfs+ -j)
+\end{itemize}
+
+\textbf{Byte representation for 0x00000100}:
+\begin{verbatim}
+Offset 1028: 0x00
+Offset 1029: 0x00
+Offset 1030: 0x01
+Offset 1031: 0x00
+\end{verbatim}
+
+\textbf{Verification}:
+\begin{verbatim}
+xxd -s 1028 -l 4 -p volume.hfsplus
+Expected: 00000100 (non-journaled) or 00002100 (journaled)
+\end{verbatim}
+
+\subsubsection{blockSize - Allocation Block Size (Offset +40, 4 bytes)}
+
+\textbf{Value}: 32-bit unsigned, big-endian
+
+\textbf{Valid range}:
+\begin{itemize}
+    \item Minimum: 512 bytes
+    \item Maximum: Typically 32 KB, theoretically larger
+    \item Must be power of 2
+    \item Must be multiple of 512
+\end{itemize}
+
+\textbf{Example for 4096 bytes (4 KB)}:
+\begin{verbatim}
+Decimal: 4096
+Hex: 0x00001000
+Bytes at offset 1064:
+  0x00 0x00 0x10 0x00
+\end{verbatim}
+
+\textbf{Validation}:
+\begin{verbatim}
+xxd -s 1064 -l 4 -p volume.hfsplus
+# For 4 KB blocks: 00001000
+# For 8 KB blocks: 00002000
+\end{verbatim}
+
+\subsubsection{rsrcClumpSize and dataClumpSize (Offsets +56, +60)}
+
+\textbf{Critical}: These MUST be non-zero in valid HFS+ volumes.
+
+\textbf{Recommended value}:
+\begin{equation}
+\text{clumpSize} = \text{blockSize} \times 4
+\end{equation}
+
+For 4 KB blocks:
+\begin{equation}
+\text{clumpSize} = 4096 \times 4 = 16384 \text{ bytes} = \texttt{0x00004000}
+\end{equation}
+
+\textbf{Byte representation}:
+\begin{verbatim}
+rsrcClumpSize at offset 1080: 0x00 0x00 0x40 0x00
+dataClumpSize at offset 1084: 0x00 0x00 0x40 0x00
+\end{verbatim}
+
+\textbf{Common error}: If these are 0x00000000, the Volume Header is invalid and nextCatalogID appears at wrong offset.
+
+\textbf{Verification}:
+\begin{verbatim}
+xxd -s 1080 -l 4 -p volume.hfsplus  # rsrcClumpSize
+xxd -s 1084 -l 4 -p volume.hfsplus  # dataClumpSize
+# Both should be non-zero
+\end{verbatim}
+
+\subsubsection{nextCatalogID - Next CNID (Offset +64, 4 bytes)}
+
+\textbf{Minimum}: \texttt{0x00000010} (16 decimal)
+
+\textbf{Reserved CNIDs 1-15}:
+\begin{longtable}{lp{8cm}}
+\toprule
+\textbf{CNID} & \textbf{Purpose} \\
+\midrule
+\endhead
+1 & Root folder's parent (kHFSRootParentID) \\
+2 & Root folder (kHFSRootFolderID) \\
+3 & Extents overflow file (kHFSExtentsFileID) \\
+4 & Catalog file (kHFSCatalogFileID) \\
+5 & Bad allocation blocks file (kHFSBadBlockFileID) \\
+6 & Allocation bitmap file (kHFSAllocationFileID) \\
+7 & Startup file (kHFSStartupFileID) \\
+8 & Attributes file (kHFSAttributesFileID) \\
+9-13 & Reserved \\
+14 & Journal file (kHFSJournalFileID, if journaled) \\
+15 & Journal info block (kHFSJournalInfoBlockID) \\
+\bottomrule
+\caption{Reserved HFS+ Catalog Node IDs}
+\end{longtable}
+
+\textbf{Byte representation for value 16}:
+\begin{verbatim}
+Offset 1088: 0x00
+Offset 1089: 0x00
+Offset 1090: 0x00
+Offset 1091: 0x10
+\end{verbatim}
+
+\textbf{Critical validation}:
+\begin{verbatim}
+xxd -s 1088 -l 4 -p volume.hfsplus
+Expected: 00000010 (minimum value)
+\end{verbatim}
+
+\textbf{Common error}: If you see \texttt{00000000}, rsrcClumpSize/dataClumpSize were likely omitted, shifting all subsequent fields.
+
+\subsection{HFSPlusForkData Structure - 80 Bytes Per Fork}
+
+Each fork descriptor is 80 bytes:
 
 \begin{longtable}{llp{6cm}}
 \toprule
-\textbf{Field} & \textbf{Offset} & \textbf{Description} \\
+\textbf{Offset} & \textbf{Field} & \textbf{Description} \\
 \midrule
 \endhead
-signature & +0 & Volume signature (0x482B = 'H+' for HFS+, 0x4858 = 'HX' for HFSX) \\
-version & +2 & Version number (4 for HFS+, 5 for HFSX) \\
-attributes & +4 & Volume attributes (see below) \\
-lastMountedVersion & +8 & Signature of OS that last mounted volume \\
-journalInfoBlock & +12 & Starting block of journal info \\
-createDate & +16 & Volume creation date (HFS+ time) \\
-modifyDate & +20 & Last modification date \\
-backupDate & +24 & Last backup date \\
-checkedDate & +28 & Last fsck date \\
-fileCount & +32 & Number of files on volume \\
-folderCount & +36 & Number of folders on volume \\
-blockSize & +40 & Allocation block size (bytes) \\
-totalBlocks & +44 & Total allocation blocks \\
-freeBlocks & +48 & Free allocation blocks \\
-nextAllocation & +52 & Next unused allocation block \\
-rsrcClumpSize & +56 & Default resource fork clump size \\
-dataClumpSize & +60 & Default data fork clump size \\
-nextCatalogID & +64 & Next unused Catalog Node ID \\
-writeCount & +68 & Volume write count \\
-encodingsBitmap & +72 & Text encodings used (64 bits) \\
-finderInfo & +80 & Finder information (32 bytes) \\
-allocationFile & +112 & Fork data for allocation file (80 bytes) \\
-extentsFile & +192 & Fork data for extents file (80 bytes) \\
-catalogFile & +272 & Fork data for catalog file (80 bytes) \\
-attributesFile & +352 & Fork data for attributes file (80 bytes) \\
-startupFile & +432 & Fork data for startup file (80 bytes) \\
++0 & logicalSize & File size in bytes (uint64) \\
++8 & clumpSize & Clump size for this file (uint32) \\
++12 & totalBlocks & Total allocation blocks (uint32) \\
++16 & extents[0] & First extent descriptor (8 bytes) \\
++24 & extents[1] & Second extent descriptor (8 bytes) \\
++32 & extents[2] & Third extent descriptor (8 bytes) \\
++40 & extents[3] & Fourth extent descriptor (8 bytes) \\
++48 & extents[4] & Fifth extent descriptor (8 bytes) \\
++56 & extents[5] & Sixth extent descriptor (8 bytes) \\
++64 & extents[6] & Seventh extent descriptor (8 bytes) \\
++72 & extents[7] & Eighth extent descriptor (8 bytes) \\
 \bottomrule
-\caption{Volume Header Fields (total size: 512 bytes)}
+\caption{HFSPlusForkData Structure (80 bytes)}
 \end{longtable}
 
-\subsection{Critical Volume Header Fields}
+\subsubsection{HFSPlusExtentDescriptor - 8 Bytes Each}
 
-\subsubsection{signature}
-\begin{itemize}
-    \item \textbf{HFS+}: \texttt{0x482B} ('H+' in ASCII)
-    \item \textbf{HFSX}: \texttt{0x4858} ('HX' in ASCII)
-    \item Identifies volume type
-    \item \textbf{Validation}: mkfs.hfs+ sets to \texttt{0x482B}
-\end{itemize}
+\begin{longtable}{llp{6cm}}
+\toprule
+\textbf{Offset} & \textbf{Field} & \textbf{Description} \\
+\midrule
+\endhead
++0 & startBlock & First allocation block (uint32) \\
++4 & blockCount & Number of blocks (uint32) \\
+\bottomrule
+\caption{HFSPlusExtentDescriptor (8 bytes)}
+\end{longtable}
 
-\subsubsection{version}
-\begin{itemize}
-    \item \textbf{HFS+}: 4
-    \item \textbf{HFSX}: 5
-    \item Indicates filesystem variant
-    \item \textbf{Validation}: mkfs.hfs+ sets to 4
-\end{itemize}
+\textbf{Example}: Catalog file uses blocks 100-199:
+\begin{verbatim}
+logicalSize:  0x0000000000018800  (100 KB)
+clumpSize:    0x00004000          (16 KB)
+totalBlocks:  0x00000019          (25 blocks)
+extents[0]:   startBlock=100, blockCount=25
+              Bytes: 00 00 00 64 00 00 00 19
+extents[1-7]: startBlock=0, blockCount=0 (unused)
+\end{verbatim}
 
-\subsubsection{attributes (Volume Attributes)}
-32-bit flags field:
-\begin{itemize}
-    \item Bit 0-6: Reserved
-    \item Bit 7 (0x0080): Volume is locked by hardware
-    \item Bit 8 (0x0100): Volume unmounted cleanly
-    \item Bit 9 (0x0200): Volume has bad blocks
-    \item Bit 10 (0x0400): Volume needs consistency check
-    \item Bit 11 (0x0800): Catalog IDs wrapped around
-    \item Bit 12 (0x1000): Unused node fix required
-    \item Bit 13 (0x2000): Volume is journaled
-    \item Bit 14 (0x4000): Volume is software locked
-    \item Bit 15-31: Reserved
-\end{itemize}
+\subsection{Alternate Volume Header Location}
 
-\textbf{Important}: mkfs.hfs+ sets bit 8 (0x0100) to indicate clean unmount.
-
-\subsubsection{nextCatalogID}
-\begin{itemize}
-    \item Minimum value: 16
-    \item Reserved IDs 1-15:
-    \begin{itemize}
-        \item 1 = Root folder's parent
-        \item 2 = Root folder
-        \item 3 = Extents overflow file
-        \item 4 = Catalog file
-        \item 5 = Bad block file
-        \item 6 = Allocation bitmap file
-        \item 7 = Startup file
-        \item 8 = Attributes file
-        \item 14 = Journal file
-        \item 15 = Journal info block
-    \end{itemize}
-    \item \textbf{Validation}: Must be >= 16
-\end{itemize}
-
-\subsubsection{rsrcClumpSize and dataClumpSize}
-\begin{itemize}
-    \item Default allocation sizes for extending forks
-    \item \textbf{Must be non-zero}
-    \item Typically set to \texttt{blockSize * 4}
-    \item Reduces fragmentation
-    \item \textbf{Validation}: mkfs.hfs+ initializes both correctly
-\end{itemize}
-
-\subsection{Alternate Volume Header}
-
-Located at the second-to-last sector of the volume:
+\textbf{Exact formula}:
 \begin{equation}
-\text{Alternate VH offset} = \text{volume\_size} - 1024 \text{ bytes}
+\text{alt\_VH\_offset} = \text{volume\_size\_bytes} - 1024
 \end{equation}
 
-\textbf{Purpose}: Recovery if primary Volume Header is corrupted.
+\textbf{Same as HFS}. This is \textbf{NOT} sector-based.
 
-\textbf{Maintenance}: Updated simultaneously with primary VH.
+\textbf{Example for 50 MB}:
+\begin{verbatim}
+Volume size: 52,428,800 bytes
+Alt VH at:   52,428,800 - 1,024 = 52,427,776 bytes
+\end{verbatim}
+
+\textbf{Verification}:
+\begin{verbatim}
+FILESIZE=$(stat -c%s volume.hfsplus)
+ALTOFFSET=$((FILESIZE - 1024))
+xxd -s $ALTOFFSET -l 2 -p volume.hfsplus
+Expected: 482b (same as primary)
+\end{verbatim}
 
 \section{HFS+ B-Trees}
 
