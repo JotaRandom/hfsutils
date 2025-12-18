@@ -147,7 +147,7 @@ mount -t hfsplus -o ro /dev/sdc1 /mnt/backup
 mount.hfs+ -o uid=1000,gid=1000,umask=022 /dev/sdd1 /mnt/data
 \end{verbatim}
 
-\textbf{Force mount dirty volume (危险)}:
+\textbf{Force mount dirty volume (WARNING - DANGEROUS)}:
 \begin{verbatim}
 mount.hfs+ -o force /dev/sde1 /mnt/recovery
 # WARNING: Can cause data corruption!
