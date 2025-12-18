@@ -346,7 +346,7 @@ extents[1-7]: startBlock=0, blockCount=0 (unused)
 
 \textbf{Exact formula}:
 \begin{equation}
-\text{alt\_VH\_offset} = \text{volume\_size\_bytes} - 1024
+\mathrm{alt\_VH\_offset} = \mathrm{volume\_size\_bytes} - 1024
 \end{equation}
 
 \textbf{Same as HFS}. This is \textbf{NOT} sector-based.
@@ -780,12 +780,12 @@ HFS+ uses a \textbf{32-bit unsigned integer} for all timestamps, representing se
 
 \textbf{HFS+ to Unix time}:
 \begin{equation}
-\text{unix\_time} = \text{hfs\_time} - 2082844800
+\mathrm{unix\_time} = \mathrm{hfs\_time} - 2082844800
 \end{equation}
 
 \textbf{Unix to HFS+ time}:
 \begin{equation}
-\text{hfs\_time} = \text{unix\_time} + 2082844800
+\mathrm{hfs\_time} = \mathrm{unix\_time} + 2082844800
 \end{equation}
 
 \textbf{Example conversion}:
