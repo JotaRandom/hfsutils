@@ -437,7 +437,7 @@ install-mkfs.hfs:
 	install -d $(DESTDIR)$(MAN8DIR)
 	install -m 755 build/standalone/mkfs.hfs $(DESTDIR)$(SBINDIR)/mkfs.hfs
 	install -m 644 doc/man/mkfs.hfs.8 $(DESTDIR)$(MAN8DIR)/mkfs.hfs.8
-	@echo "✓ mkfs.hfs installed"
+	@echo "[OK] mkfs.hfs installed"
 	@echo ""
 	@echo "Additional options available:"
 	@echo "  make install-mkfs.hfs+     # Install HFS+ version"
@@ -452,7 +452,7 @@ install-mkfs.hfs+:
 	install -d $(DESTDIR)$(MAN8DIR)
 	install -m 755 build/standalone/mkfs.hfs+ $(DESTDIR)$(SBINDIR)/mkfs.hfs+
 	install -m 644 doc/man/mkfs.hfs+.8 $(DESTDIR)$(MAN8DIR)/mkfs.hfs+.8
-	@echo "✓ mkfs.hfs+ installed"
+	@echo "[OK] mkfs.hfs+ installed"
 	@echo ""
 	@echo "Additional options available:"
 	@echo "  make install-fsck.hfs+     # Install filesystem checker"
@@ -467,7 +467,7 @@ install-fsck.hfs:
 	install -d $(DESTDIR)$(MAN8DIR)
 	install -m 755 build/standalone/fsck.hfs $(DESTDIR)$(SBINDIR)/fsck.hfs
 	install -m 644 doc/man/fsck.hfs.8 $(DESTDIR)$(MAN8DIR)/fsck.hfs.8
-	@echo "✓ fsck.hfs installed"
+	@echo "[OK] fsck.hfs installed"
 	@echo ""
 	@echo "Additional options available:"
 	@echo "  make install-mkfs.hfs      # Install filesystem creator"
@@ -481,7 +481,7 @@ install-fsck.hfs+:
 	install -d $(DESTDIR)$(MAN8DIR)
 	install -m 755 build/standalone/fsck.hfs+ $(DESTDIR)$(SBINDIR)/fsck.hfs+
 	install -m 644 doc/man/fsck.hfs+.8 $(DESTDIR)$(MAN8DIR)/fsck.hfs+.8
-	@echo "✓ fsck.hfs+ installed"
+	@echo "[OK] fsck.hfs+ installed"
 	@echo ""
 	@echo "Additional options available:"
 	@echo "  make install-mkfs.hfs+     # Install filesystem creator"
@@ -496,7 +496,7 @@ install-mount.hfs:
 	install -d $(DESTDIR)$(MAN8DIR)
 	install -m 755 src/mount/mount.hfs $(DESTDIR)$(SBINDIR)/mount.hfs
 	install -m 644 doc/man/mount.hfs.8 $(DESTDIR)$(MAN8DIR)/mount.hfs.8
-	@echo "✓ mount.hfs installed"
+	@echo "[OK] mount.hfs installed"
 	@echo ""
 	@echo "Additional options available:"
 	@echo "  make install-mkfs.hfs      # Install filesystem creator"
@@ -510,7 +510,7 @@ install-mount.hfs+:
 	install -d $(DESTDIR)$(MAN8DIR)
 	install -m 755 src/mount/mount.hfs+ $(DESTDIR)$(SBINDIR)/mount.hfs+
 	install -m 644 doc/man/mount.hfs+.8 $(DESTDIR)$(MAN8DIR)/mount.hfs+.8
-	@echo "✓ mount.hfs+ installed"
+	@echo "[OK] mount.hfs+ installed"
 	@echo ""
 	@echo "Additional options available:"
 	@echo "  make install-mkfs.hfs+     # Install filesystem creator"
@@ -538,7 +538,7 @@ install-mount: install-mount.hfs install-mount.hfs+
 install-set-hfs: install-mkfs.hfs install-fsck.hfs install-mount.hfs
 	@echo ""
 	@echo "========================================="
-	@echo "✓ HFS toolset installed (mkfs.hfs, fsck.hfs, mount.hfs)"
+	@echo "[OK] HFS toolset installed (mkfs.hfs, fsck.hfs, mount.hfs)"
 	@echo "========================================="
 	@echo ""
 	@echo "Not installed yet:"
@@ -556,7 +556,7 @@ install-set-hfsplus: install-mkfs.hfs+ install-fsck.hfs+ install-mount.hfs+
 	ln -sf mount.hfs+.8 $(DESTDIR)$(MAN8DIR)/mount.hfsplus.8
 	@echo ""
 	@echo "========================================="
-	@echo "✓ HFS+ toolset installed (mkfs.hfs+, fsck.hfs+, mount.hfs+ + .hfsplus symlinks)"
+	@echo "[OK] HFS+ toolset installed (mkfs.hfs+, fsck.hfs+, mount.hfs+ + .hfsplus symlinks)"
 	@echo "========================================="
 	@echo ""
 	@echo "Not installed yet:"

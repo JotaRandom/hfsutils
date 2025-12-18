@@ -41,7 +41,7 @@ validate_hfs_spec() {
     local alt_sig=$(read_hex "$img" $((size - 1024)) 2)
     [ "$alt_sig" = "4244" ] || { echo "FAIL: $name - alt MDB invalid"; return 1; }
     
-    echo "  ✓ HFS spec valid (sig 0x4244, drNxtCNID=16, alt MDB)"
+    echo "[OK] HFS spec valid (sig 0x4244, drNxtCNID=16, alt MDB)"
     return 0
 }
 
@@ -68,7 +68,7 @@ validate_hfsplus_spec() {
     local alt_sig=$(read_hex "$img" $((size - 1024)) 2)
     [ "$alt_sig" = "482b" ] || { echo "FAIL: $name - alt VH invalid"; return 1; }
     
-    echo "  ✓ HFS+ spec valid (sig 0x482b, version=4, bs=$bs, alt VH)"
+    echo "[OK] HFS+ spec valid (sig 0x482b, version=4, bs=$bs, alt VH)"
     return 0
 }
 
@@ -99,7 +99,7 @@ fi
 
 echo "[4] Validate spec (after fsck)..."
 validate_hfs_spec "$IMG_SMALL" "small" || exit 1
-echo "✓ Image 1 complete"
+echo "[OK] Image 1 complete"
 echo ""
 
 #
@@ -128,7 +128,7 @@ fi
 
 echo "[5] Validate spec (after fsck)..."
 validate_hfsplus_spec "$IMG_MEDIUM" "medium" || exit 1
-echo "✓ Image 2 complete"
+echo "[OK] Image 2 complete"
 echo ""
 
 #
@@ -153,7 +153,7 @@ fi
 
 echo "[4] Validate spec (after fsck)..."
 validate_hfsplus_spec "$IMG_LARGE" "large" || exit 1
-echo "✓ Image 3 complete"
+echo "[OK] Image 3 complete"
 echo ""
 
 #
@@ -166,7 +166,7 @@ echo "[1] Journaling (-j)..."
 dd if=/dev/zero of="$TMP/journal.img" bs=1M count=20 2>/dev/null
 output=$($BUILD/mkfs.hfs+ -j -l "Journal" "$TMP/journal.img" 2>&1 || true)
 if echo "$output" | grep -q "successfully"; then
-    echo "  ✓ Journaling option works"
+    echo "[OK] Journaling option works"
 else
     echo "  (journaling may have issues)"
 fi
@@ -175,11 +175,11 @@ fi
 echo "[2] Custom size (-s)..."
 dd if=/dev/zero of="$TMP/custom.img" bs=1M count=50 2>/dev/null
 $BUILD/mkfs.hfs+ -s 20M -l "Custom" "$TMP/custom.img" >/dev/null 2>&1 || { echo "FAIL: -s"; exit 1; }
-echo "  ✓ Custom size works"
+echo "[OK] Custom size works"
 
 echo ""
 echo "========================================="
-echo "✓ All mkfs tests passed"
+echo "[OK] All mkfs tests passed"
 echo "  - HFS creation and validation"
 echo "  - HFS+ creation and validation"
 echo "  - Spec compliance verified"
@@ -200,14 +200,14 @@ if [ -f "$BUILD/mount.hfs" ] && [ -f "$BUILD/mount.hfs+" ]; then
     
     # Try to mount HFS volume
     if $BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" 2>&1 | grep -q "not supported"; then
-        echo "  ⚠ HFS kernel driver not available (expected on some systems)"
+        echo "  ! HFS kernel driver not available (expected on some systems)"
     elif $BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" 2>&1 | grep -q "permission denied"; then
-        echo "  ⚠ Permission denied (run as root to test mount)"
+        echo "  ! Permission denied (run as root to test mount)"
     elif $BUILD/mount.hfs "$IMG_SMALL" "$MOUNT_TEST" >/dev/null 2>&1; then
-        echo "  ✓ HFS mount successful"
+        echo "[OK] HFS mount successful"
         # Verify mount worked
         if mount | grep -q "$MOUNT_TEST"; then
-            echo "  ✓ HFS volume is mounted"
+            echo "[OK] HFS volume is mounted"
             umount "$MOUNT_TEST" 2>/dev/null || true
         else
             echo "  FAIL: mount.hfs returned success but volume not mounted!"
@@ -221,7 +221,7 @@ if [ -f "$BUILD/mount.hfs" ] && [ -f "$BUILD/mount.hfs+" ]; then
             echo "  Error: $err"
             exit 1
         else
-            echo "  ⚠ Mount failed: $err"
+            echo "  ! Mount failed: $err"
         fi
     fi
     
@@ -230,14 +230,14 @@ if [ -f "$BUILD/mount.hfs" ] && [ -f "$BUILD/mount.hfs+" ]; then
     
     # Try to mount HFS+ volume
     if $BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" 2>&1 | grep -q "not supported"; then
-        echo "  ⚠ HFS+ kernel driver not available (expected on some systems)"
+        echo "  ! HFS+ kernel driver not available (expected on some systems)"
     elif $BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" 2>&1 | grep -q "permission denied"; then
-        echo "  ⚠ Permission denied (run as root to test mount)"
+        echo "  ! Permission denied (run as root to test mount)"
     elif $BUILD/mount.hfs+ "$IMG_MEDIUM" "$MOUNT_TEST" >/dev/null 2>&1; then
-        echo "  ✓ HFS+ mount successful"
+        echo "[OK] HFS+ mount successful"
         # Verify mount worked
         if mount | grep -q "$MOUNT_TEST"; then
-            echo "  ✓ HFS+ volume is mounted"
+            echo "[OK] HFS+ volume is mounted"
             umount "$MOUNT_TEST" 2>/dev/null || true
         else
             echo "  FAIL: mount.hfs+ returned success but volume not mounted!"
@@ -251,14 +251,14 @@ if [ -f "$BUILD/mount.hfs" ] && [ -f "$BUILD/mount.hfs+" ]; then
             echo "  Error: $err"
             exit 1
         else
-            echo "  ⚠ Mount failed: $err"
+            echo "  ! Mount failed: $err"
         fi
     fi
     
     rmdir "$MOUNT_TEST" 2>/dev/null || true
-    echo "✓ Mount tests complete"
+    echo "[OK] Mount tests complete"
 else
     echo ""
-    echo "⚠ mount.hfs/mount.hfs+ not found - skipping mount tests"
+    echo "! mount.hfs/mount.hfs+ not found - skipping mount tests"
 fi
 
