@@ -1,11 +1,305 @@
-\section{mount.hfs - HFS Filesystem Mounting}
+\chapter{Mount Utilities}
 
-\textit{This chapter will include complete mount.hfs and mount.hfs+ documentation from manpages.}
+This chapter documents mount.hfs and mount.hfs+ utilities for mounting HFS and HFS+ filesystems following Unix/BSD/Linux standards.
 
-\subsection{Command Synopsis}
+\section{mount.hfs and mount.hfs+ - Filesystem Mounting}
+
+\subsection{Synopsis}
+
 \begin{verbatim}
 mount.hfs [-o options] [-r] [-w] [-v] device mountpoint
 mount.hfs+ [-o options] [-r] [-w] [-v] device mountpoint
+mount -t hfs [-o options] device mountpoint
+mount -t hfsplus [-o options] device mountpoint
 \end{verbatim}
 
-\textbf{Note}: Full content will be converted from doc/man/mount.hfs.8 and mount.hfs+.8
+\subsection{Description}
+
+Mount HFS or HFS+ filesystems at specified mountpoints. These utilities follow Unix mount(8) conventions and integrate with /etc/fstab. Automatically validate filesystem before mounting and handle both read-only and read-write modes.
+
+\subsection{Standard Options}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Option} & \textbf{Description} \\
+\midrule
+\endhead
+-o options & Mount options (comma-separated, see below) \\
+-r & Mount read-only (shorthand for -o ro) \\
+-w & Mount read-write (shorthand for -o rw) \\
+-v & Verbose output \\
+device & Block device to mount (e.g., /dev/sdb1) \\
+mountpoint & Directory where filesystem will be mounted \\
+\bottomrule
+\caption{mount.hfs/mount.hfs+ Options}
+\end{longtable}
+
+\subsection{Mount Options (-o)}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Option} & \textbf{Description} \\
+\midrule
+\endhead
+ro & Read-only mount (default for journaled on Linux) \\
+rw & Read-write mount \\
+noexec & Do not allow execution of binaries \\
+nosuid & Do not honor setuid/setgid bits \\
+nodev & Do not interpret device files \\
+sync & Synchronous I/O (slow but safe) \\
+async & Asynchronous I/O (fast but risky on crash) \\
+uid=N & Set owner UID for all files \\
+gid=N & Set group GID for all files \\
+umask=N & Set umask for file permissions \\
+force & Force mount even if filesystem appears dirty \\
+\bottomrule
+\caption{Common Mount Options}
+\end{longtable}
+
+\subsection{Mount Process}
+
+\subsubsection{Pre-Mount Validation}
+\begin{enumerate}
+    \item Verify device exists and is accessible
+    \item Check if device is already mounted
+    \item Read filesystem signature (offset 1024)
+    \item Validate signature (0x4244 for HFS, 0x482B/0x4858 for HFS+)
+    \item Check unmounted bit in attributes
+    \item If dirty: warn and suggest fsck
+    \item Verify mountpoint exists and is empty directory
+\end{enumerate}
+
+\subsubsection{Kernel Module Check (Linux)}
+\begin{verbatim}
+# Check if kernel module loaded
+lsmod | grep hfs
+# Load if needed
+modprobe hfs      # For HFS classic
+modprobe hfsplus  # For HFS+
+\end{verbatim}
+
+\subsubsection{Mount Execution}
+\begin{enumerate}
+    \item Call kernel mount() syscall
+    \item Pass filesystem type ("hfs" or "hfsplus")
+    \item Pass mount options
+    \item Kernel driver validates and mounts
+    \item Update /etc/mtab (on success)
+    \item Return exit code
+\end{enumerate}
+
+\subsection{Journaling Considerations}
+
+\textbf{CRITICAL for Linux users}:
+
+\begin{itemize}
+    \item Linux HFS+ driver does NOT support journaling
+    \item Journaled volumes MUST be mounted read-only on Linux
+    \item Automatic detection: if journaled bit set → force ro
+    \item Warning displayed: "Volume is journaled, mounting read-only"
+\end{itemize}
+
+\textbf{Detection algorithm}:
+\begin{verbatim}
+if (attributes & 0x00002000) {
+    fprintf(stderr, "WARNING: Journaled volume\n");
+    fprintf(stderr, "Linux does not support HFS+ journaling\n");
+    fprintf(stderr, "Mounting read-only\n");
+    force_readonly = 1;
+}
+\end{verbatim}
+
+\subsection{Exit Codes}
+
+\begin{longtable}{lp{10cm}}
+\toprule
+\textbf{Code} & \textbf{Meaning} \\
+\midrule
+\endhead
+0 & Success, filesystem mounted \\
+1 & Incorrect invocation or permissions \\
+2 & System error (out of memory, etc.) \\
+4 & Internal mount bug \\
+8 & User interrupt \\
+16 & Problems writing or locking /etc/mtab \\
+32 & Mount failure \\
+64 & Some mount succeeded \\
+\bottomrule
+\caption{mount Exit Codes (Linux Standard)}
+\end{longtable}
+
+\subsection{Examples}
+
+\textbf{Mount HFS classic read-write}:
+\begin{verbatim}
+mount.hfs /dev/sdb1 /mnt/hfs
+mount -t hfs /dev/sdb1 /mnt/hfs
+\end{verbatim}
+
+\textbf{Mount HFS+ read-only}:
+\begin{verbatim}
+mount.hfs+ -r /dev/sdc1 /mnt/backup
+mount -t hfsplus -o ro /dev/sdc1 /mnt/backup
+\end{verbatim}
+
+\textbf{Mount with specific permissions}:
+\begin{verbatim}
+mount.hfs+ -o uid=1000,gid=1000,umask=022 /dev/sdd1 /mnt/data
+\end{verbatim}
+
+\textbf{Force mount dirty volume (危险)}:
+\begin{verbatim}
+mount.hfs+ -o force /dev/sde1 /mnt/recovery
+# WARNING: Can cause data corruption!
+\end{verbatim}
+
+\subsection{Unmounting}
+
+\textbf{Standard unmount}:
+\begin{verbatim}
+umount /mnt/hfs
+umount /dev/sdb1
+\end{verbatim}
+
+\textbf{Force unmount (if busy)}:
+\begin{verbatim}
+umount -f /mnt/hfs
+# Or lazy unmount:
+umount -l /mnt/hfs
+\end{verbatim}
+
+\textbf{Check what's using mount}:
+\begin{verbatim}
+lsof | grep /mnt/hfs
+fuser -m /mnt/hfs
+\end{verbatim}
+
+\subsection{/etc/fstab Integration}
+
+\textbf{HFS entry}:
+\begin{verbatim}
+/dev/sdb1  /mnt/hfs  hfs  defaults,ro  0  0
+\end{verbatim}
+
+\textbf{HFS+ entry}:
+\begin{verbatim}
+/dev/sdc1  /mnt/backup  hfsplus  ro,noexec,nosuid  0  0
+\end{verbatim}
+
+\textbf{HFS+ with UUID}:
+\begin{verbatim}
+UUID=xxxx-xxxx  /mnt/data  hfsplus  rw,uid=1000  0  2
+\end{verbatim}
+
+\textbf{Field meanings}:
+\begin{enumerate}
+    \item Device or UUID
+    \item Mount point
+    \item Filesystem type (hfs or hfsplus)
+    \item Mount options
+    \item Dump frequency (usually 0)
+    \item fsck pass number (0=skip, 1=root, 2=other)
+\end{enumerate}
+
+\subsection{Common Issues}
+
+\subsubsection{Device is Busy}
+\begin{verbatim}
+mount: /dev/sdb1 already mounted or /mnt/hfs busy
+\end{verbatim}
+\textbf{Solutions}:
+\begin{itemize}
+    \item Check if already mounted: \texttt{mount | grep sdb1}
+    \item Find processes using it: \texttt{lsof | grep sdb1}
+    \item Kill processes or use \texttt{umount -f}
+\end{itemize}
+
+\subsubsection{Wrong Filesystem Type}
+\begin{verbatim}
+mount: wrong fs type, bad option, bad superblock
+\end{verbatim}
+\textbf{Solutions}:
+\begin{itemize}
+    \item Verify signature: \texttt{xxd -s 1024 -l 2 /dev/sdb1}
+    \item Use correct type: hfs vs hfsplus
+    \item Run fsck first: \texttt{fsck.hfs+ /dev/sdb1}
+\end{itemize}
+
+\subsubsection{Permission Denied}
+\begin{verbatim}
+mount: only root can do that
+\end{verbatim}
+\textbf{Solution}: Use sudo
+\begin{verbatim}
+sudo mount.hfs+ /dev/sdb1 /mnt/hfs
+\end{verbatim}
+
+\subsubsection{Module Not Found}
+\begin{verbatim}
+mount: unknown filesystem type 'hfsplus'
+\end{verbatim}
+\textbf{Solution}: Load kernel module
+\begin{verbatim}
+sudo modprobe hfsplus
+# Or for HFS classic:
+sudo modprobe hfs
+\end{verbatim}
+
+\subsection{Portability Notes}
+
+\textbf{Linux}: Full support via kernel modules (hfs.ko, hfsplus.ko)
+\begin{itemize}
+    \item HFS: Full read/write support
+    \item HFS+: Read/write support, NO journaling
+    \item Always mount journaled volumes read-only
+\end{itemize}
+
+\textbf{FreeBSD}: Native HFS read support
+\begin{itemize}
+    \item Write support via FUSE
+    \item Mount with: \texttt{mount -t hfs /dev/da0s1 /mnt}
+\end{itemize}
+
+\textbf{macOS}: Native full support
+\begin{itemize}
+    \item Automatic mounting via diskutil
+    \item Full journaling support
+    \item Default filesystem (legacy, now APFS)
+\end{itemize}
+
+\section{Implementation}
+
+\subsection{Source Code}
+\begin{itemize}
+    \item \texttt{src/mount/mount\_hfs.c}: HFS mount helper
+    \item \texttt{src/mount/mount\_hfsplus.c}: HFS+ mount helper
+    \item \texttt{src/mount/mount\_common.h}: Shared definitions
+\end{itemize}
+
+\subsection{Critical Functions}
+
+\textbf{validate\_filesystem()}:
+\begin{verbatim}
+int validate_filesystem(const char *device) {
+    int fd = open(device, O_RDONLY);
+    uint16_t sig;
+    lseek(fd, 1024, SEEK_SET);
+    read(fd, &sig, 2);
+    sig = be16toh(sig);
+    
+    if (sig == 0x4244) return FS_HFS;
+    if (sig == 0x482B || sig == 0x4858) return FS_HFSPLUS;
+    return FS_UNKNOWN;
+}
+\end{verbatim}
+
+\textbf{check\_journaling()}:
+\begin{verbatim}
+int check_journaling(int fd) {
+    uint32_t attributes;
+    lseek(fd, 1024 + 4, SEEK_SET);
+    read(fd, &attributes, 4);
+    attributes = be32toh(attributes);
+    return (attributes & 0x00002000) ? 1 : 0;
+}
+\end{verbatim}
