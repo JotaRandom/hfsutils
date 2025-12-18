@@ -1,0 +1,341 @@
+\section{Overview}
+
+This chapter traces the evolution of Apple's filesystems from the original Macintosh File System (MFS) through HFS, HFS+, and the modern APFS. Understanding this evolution provides context for design decisions and compatibility requirements.
+
+\section{Macintosh File System (MFS)}
+
+\subsection{Introduction}
+
+MFS (Macintosh File System) was the original filesystem used on the Macintosh 128K and 512K (1984-1985). It was designed for floppy disks and small hard drives.
+
+\subsection{Key Characteristics}
+
+\begin{itemize}
+    \item \textbf{Introduced}: January 1984 (Macintosh 128K)
+    \item \textbf{Maximum volume size}: 20 MB (limited by hardware)
+    \item \textbf{Maximum files}: 65,535 (16-bit file numbers)
+    \item \textbf{Filename length}: 255 characters (Macintosh Roman)
+    \item \textbf{Directory structure}: Flat (no folders/subdirectories)
+    \item \textbf{Dual forks}: Data fork and resource fork
+    \item \textbf{File types}: 4-character type and creator codes
+\end{itemize}
+
+\subsection{Design Philosophy}
+
+MFS was revolutionary for its time:
+\begin{itemize}
+    \item First consumer filesystem with resource forks
+    \item Integrated with Finder for desktop metaphor
+    \item Type/creator codes enabled double-click launching
+    \item Desktop file tracked file positions and icons
+\end{itemize}
+
+\subsection{Limitations}
+
+\begin{itemize}
+    \item \textbf{No hierarchy}: All files stored in single directory
+    \item \textbf{Finder folders}: Simulated by Finder, not filesystem
+    \item \textbf{Small volumes}: Designed for 400K floppies
+    \item \textbf{Poor scalability}: Performance degraded with many files
+\end{itemize}
+
+\subsection{MFS Structure Summary}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Component} & \textbf{Description} \\
+\midrule
+Logical Block 0-1 & Boot blocks (1024 bytes) \\
+Logical Block 2 & Master Directory Block (MDB) \\
+Following blocks & File directory (single B-tree) \\
+... & Allocation bitmap \\
+... & File data \\
+Last sector & Alternate MDB \\
+\bottomrule
+\end{tabular}
+\caption{MFS Volume Layout}
+\end{table}
+
+\textbf{Note}: MFS is not implemented in hfsutils but documented for historical context and understanding HFS evolution.
+
+\section{Hierarchical File System (HFS)}
+
+\subsection{Introduction}
+
+HFS (Hierarchical File System) replaced MFS in Mac OS System 2.1 (1985) and System 3.0 (1986). It introduced true hierarchical directories.
+
+\subsection{Key Improvements over MFS}
+
+\begin{itemize}
+    \item \textbf{Hierarchical directories}: True folder structure
+    \item \textbf{Larger volumes}: Up to 2 GB (later 2 TB with HFS wrapper)
+    \item \textbf{Better performance}: Separate B-trees for catalog and extents
+    \item \textbf{Allocation optimization}: Clump sizes reduce fragmentation
+\end{itemize}
+
+\subsection{Timeline}
+
+\begin{itemize}
+    \item \textbf{1985}: Introduced with Hard Disk 20
+    \item \textbf{1986}: Became standard in System 3.0
+    \item \textbf{1998}: Superseded by HFS+ in Mac OS 8.1
+    \item \textbf{1999}: Last use in Mac OS 9 for booting
+    \item \textbf{2000s}: Maintained for compatibility
+    \item \textbf{Today}: Supported for legacy media
+\end{itemize}
+
+\subsection{HFS Characteristics}
+
+Detailed in Chapter 2 (HFS Specification). Summary:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Feature} & \textbf{Specification} \\
+\midrule
+Signature & 0x4244 ('BD') \\
+Maximum volume & 2 TB \\
+Maximum file & 2 GB \\
+Filename length & 31 characters (MacRoman) \\
+Allocation blocks & 16-bit addressing (65,535 blocks) \\
+B-tree node size & 512 bytes (fixed) \\
+Date range & 1904-2028 (Y2K28 limit) \\
+Case sensitivity & Case-insensitive, case-preserving \\
+\bottomrule
+\end{tabular}
+\caption{HFS Characteristics}
+\end{table}
+
+\section{HFS Plus (HFS+)}
+
+\subsection{Introduction}
+
+HFS+ (HFS Plus, "Mac OS Extended") was introduced in Mac OS 8.1 (1998) to address HFS limitations for modern computing.
+
+\subsection{Major Enhancements}
+
+\begin{itemize}
+    \item \textbf{Unicode filenames}: UTF-16, up to 255 characters
+    \item \textbf{32-bit addressing}: Support for very large volumes
+    \item \textbf{Smaller allocation blocks}: Better space efficiency
+    \item \textbf{Journaling}: Optional crash recovery (Mac OS X 10.2.2+)
+    \item \textbf{Hard links}: Unix-style hard links
+    \item \textbf{Symbolic links}: Unix-style symbolic links
+    \item \textbf{Extended attributes}: Arbitrary metadata
+    \item \textbf{HFSX variant}: Case-sensitive option
+\end{itemize}
+
+\subsection{Timeline}
+
+\begin{itemize}
+    \item \textbf{1998}: Introduced in Mac OS 8.1
+    \item \textbf{1999}: Became default in Mac OS 8.6
+    \item \textbf{2001}: Mac OS X adoption
+    \item \textbf{2002}: Journaling added (Mac OS X 10.2.2)
+    \item \textbf{2005}: Case-sensitive HFSX variant
+    \item \textbf{2017}: Superseded by APFS (macOS 10.13)
+    \item \textbf{Today}: Still widely used, especially on spinning drives
+\end{itemize}
+
+\subsection{HFS+ Variants}
+
+\subsubsection{Standard HFS+}
+\begin{itemize}
+    \item Signature: 0x482B ('H+')
+    \item Version: 4
+    \item Case-insensitive filenames
+    \item Most compatible
+\end{itemize}
+
+\subsubsection{HFSX (HFS Extended)}
+\begin{itemize}
+    \item Signature: 0x4858 ('HX')
+    \item Version: 5
+    \item Case-sensitive filenames
+    \item Used for Unix-like behavior
+\end{itemize}
+
+\subsubsection{Journaled HFS+}
+\begin{itemize}
+    \item Attributes bit 13 (0x2000) set
+    \item Journal info block pointer in Volume Header
+    \item Circular journal buffer
+   \item \textbf{Not supported by Linux kernel}
+\end{itemize}
+
+\subsection{HFS+ Characteristics}
+
+Detailed in Chapter 3 (HFS+ Specification). Summary:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Feature} & \textbf{Specification} \\
+\midrule
+Signature & 0x482B ('H+') or 0x4858 ('HX') \\
+Maximum volume & 8 EB theoretical \\
+Maximum file & 8 EB theoretical \\
+Filename length & 255 UTF-16 characters \\
+Allocation blocks & 32-bit addressing \\
+B-tree node size & 4096 bytes (typical) \\
+Date range & 1904-2040 (Y2K40 limit) \\
+Case sensitivity & Optional (HFSX) \\
+Journaling & Optional \\
+\bottomrule
+\end{tabular}
+\caption{HFS+ Characteristics}
+\end{table}
+
+\section{Apple File System (APFS)}
+
+\subsection{Introduction}
+
+APFS (Apple File System) is Apple's modern filesystem, introduced in macOS 10.13 High Sierra (2017). It replaces HFS+ as the default for SSDs and flash storage.
+
+\subsection{Design Goals}
+
+\begin{itemize}
+    \item \textbf{Flash optimized}: Minimize write amplification
+    \item \textbf{Space sharing}: Multiple volumes share space pool
+    \item \textbf{Snapshots}: Instant, space-efficient snapshots
+    \item \textbf{Cloning}: Copy-on-write file/directory clones
+    \item \textbf{Strong encryption}: Native full-disk and per-file encryption
+    \item \textbf{Crash protection}: Copy-on-write metadata
+\end{itemize}
+
+\subsection{Key Features}
+
+\begin{itemize}
+    \item 64-bit inode numbers
+    \item Nanosecond timestamp precision
+    \item Space sharing between volumes
+    \item Native encryption (FileVault)
+    \item Fast directory sizing
+    \item Atomic safe-save operations
+    \item Clones and snapshots
+\end{itemize}
+
+\subsection{APFS vs HFS+}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Feature} & \textbf{HFS+} & \textbf{APFS} \\
+\midrule
+Introduced & 1998 & 2017 \\
+Optimized for & HDDs & SSDs/Flash \\
+Snapshots & No & Yes \\
+Cloning & No & Yes (instant) \\
+Encryption & Per-volume & Per-file + volume \\
+Space sharing & No & Yes \\
+Timestamps & Second precision & Nanosecond precision \\
+Max files & ~4 billion & ~9 quintillion \\
+Journaling & Optional & Always (COW) \\
+\bottomrule
+\end{tabular}
+\caption{HFS+ vs APFS Comparison}
+\end{table}
+
+\subsection{APFS Adoption}
+
+\begin{itemize}
+    \item \textbf{macOS 10.13+}: Default for SSDs
+    \item \textbf{iOS 10.3+}: Default for all devices
+    \item \textbf{watchOS 4+}: Default
+    \item \textbf{tvOS 11+}: Default
+    \item \textbf{HDDs}: HFS+ still recommended (as of macOS 13)
+\end{itemize}
+
+\subsection{Why HFS+ Still Matters}
+
+\begin{itemize}
+    \item \textbf{Legacy systems}: Pre-2017 Macs
+    \item \textbf{HDDs}: APFS not optimized for spinning drives
+    \item \textbf{External drives}: Better compatibility
+    \item \textbf{Recovery partitions}: Some use HFS+
+    \item \textbf{Boot Camp}: Windows compatibility
+    \item \textbf{Linux support}: Better HFS+ kernel support
+\end{itemize}
+
+\section{Filesystem Evolution Summary}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{FS} & \textbf{Year} & \textbf{Max Volume} & \textbf{Max File} & \textbf{Key Innovation} \\
+\midrule
+MFS & 1984 & 20 MB & N/A & Resource forks \\
+HFS & 1985 & 2 TB & 2 GB & Hierarchy \\
+HFS+ & 1998 & 8 EB & 8 EB & Unicode, large files \\
+APFS & 2017 & 8 EB & 8 EB & Flash-optimized, snapshots \\
+\bottomrule
+\end{tabular}
+\caption{Apple Filesystem Evolution}
+\end{table}
+
+\section{Scope of This Document}
+
+This manual focuses on:
+\begin{itemize}
+    \item \textbf{HFS (Classic)}: Complete implementation (Chapter 2)
+    \item \textbf{HFS+}: Complete implementation (Chapter 3)
+    \item \textbf{MFS}: Historical context only
+    \item \textbf{APFS}: Overview for migration context
+\end{itemize}
+
+All specifications are documented at the bit level to enable complete reimplementation without external references.
+
+\section{Historical Oddities and Notes}
+
+\subsection{The "BD" Signature Mystery}
+
+HFS uses signature 0x4244 ('BD' in ASCII). The origin is unclear:
+\begin{itemize}
+    \item Possibly "Block Device"
+    \item Possibly arbitrary choice
+    \item Never officially documented by Apple
+\end{itemize}
+
+\subsection{The 1904 Epoch}
+
+All Apple filesystems use January 1, 1904 as time zero:
+\begin{itemize}
+    \item Predates Unix epoch (1970) by 66 years
+    \item Reason unknown but consistent across all Apple filesystems
+    \item Creates Y2K28 (HFS) and Y2K40 (HFS+) problems
+\end{itemize}
+
+\subsection{The Colon as Path Separator}
+
+Classic Mac OS used colon (:) as path separator:
+\begin{itemize}
+    \item Unix/Windows use / and \textbackslash respectively
+    \item Filenames cannot contain colons
+    \item Causes issues when sharing files cross-platform
+    \item Mac OS X translates : to / for display
+\end{itemize}
+
+\subsection{The 31 vs 255 Character Limit}
+
+\begin{itemize}
+    \item HFS: 31 characters (historical, tied to original Mac)
+    \item HFS+: 255 characters (modern standard)
+    \item MFS: Actually 255 characters (more than HFS!)
+\end{itemize}
+
+\subsection{Case Sensitivity Confusion}
+
+\begin{itemize}
+    \item HFS/HFS+: Case-insensitive by default
+    \item HFSX: Case-sensitive variant
+    \item Linux ext4: Case-sensitive
+    \item Windows NTFS: Case-insensitive but preserving
+    \item Source of many cross-platform file issues
+\end{itemize}

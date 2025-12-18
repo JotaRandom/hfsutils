@@ -24,9 +24,9 @@
 # include "version.h"
 
 const char hfsutils_rcsid[] =
-  "hfsutils 4.1.0A.1";
+  "hfsutils 4.1.0A.2";
 
-const char hfsutils_version[]   = "hfsutils version 4.1.0A.1";
+const char hfsutils_version[]   = "hfsutils version 4.1.0A.2";
 const char hfsutils_copyright[] = "Original Copyright (C) 1996-1998 Robert Leslie\n"
                                   "Modern fork Copyright (C) 2025 Brock Gunter-Smith\n"
                                   "hfsutils re-port Copyright (C) 2025 Pablo Lezaeta";
