@@ -19,7 +19,7 @@ TESTS_FAILED=0
 # log_pass() - Log successful test
 #
 log_pass() {
-    echo -e "${GREEN}✓ PASS${NC}: $1"
+    echo -e "${GREEN}+ PASS${NC}: $1"
     ((TESTS_PASSED++))
 }
 
@@ -246,8 +246,8 @@ print_summary() {
     echo "Passed: $TESTS_PASSED"
     echo "Failed: $TESTS_FAILED"
     echo ""
-    echo "✓ All filesystems are 100% valid"
-    echo "✓ All structures conform to specifications"
-    echo "✓ All repairs worked correctly"
+    echo "+ All filesystems are 100% valid"
+    echo "+ All structures conform to specifications"
+    echo "+ All repairs worked correctly"
     echo ""
 }
