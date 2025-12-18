@@ -1,15 +1,421 @@
-\section{HFS+ Overview}
+\section{HFS+ Filesystem Overview}
 
-HFS+ (also known as HFS Plus or Mac OS Extended) is the successor to HFS.
+HFS Plus (HFS+), also known as Mac OS Extended, is Apple's modern filesystem designed to replace HFS. Introduced in Mac OS 8.1 (1998), it addresses HFS limitations while maintaining backward compatibility.
 
-\textit{This chapter is under development and will include:}
+\subsection{Key Improvements over HFS}
+
 \begin{itemize}
-    \item HFS+ volume structure
-    \item Volume Header details
-    \item B-tree enhancements
-    \item Journaling support
-    \item Unicode filenames
-    \item Y2K40 date limits
+    \item \textbf{Unicode filenames}: Full Unicode support (up to 255 UTF-16 characters)
+    \item \textbf{Larger volumes}: Up to 8 EB (exabytes) theoretical
+    \item \textbf{Larger files}: Up to 8 EB per file
+    \item \textbf{Smaller allocation blocks}: More efficient space usage
+    \item \textbf{Journaling support}: Optional transaction journal for crash recovery
+    \item \textbf{Hard links}: Support for hard links (Mac OS X 10.2+)
+    \item \textbf{Symbolic links}: Support for symbolic links
+    \item \textbf{Extended attributes}: Arbitrary metadata on files/folders
+    \item \textbf{Case sensitivity option}: HFSX variant supports case-sensitive names
 \end{itemize}
 
-\textbf{Note}: See TN1150\_HFS\_PLUS\_VOLUME\_FORMAT.md and WIKIPEDIA\_HFS\_PLUS.md in the doc/ directory for detailed specifications.
+\subsection{HFS+ Characteristics}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Feature} & \textbf{Specification} \\
+\midrule
+Maximum volume size & 8 EB (2\textsuperscript{63} bytes) \\
+Maximum file size & 8 EB (2\textsuperscript{63} bytes) \\
+Filename length & 255 Unicode characters (UTF-16) \\
+Date range & January 1, 1904 to February 6, 2040 (Y2K40) \\
+Minimum allocation block & 512 bytes \\
+Block addressing & 32-bit allocation block numbers \\
+Case sensitivity & Case-insensitive (HFS+) or case-sensitive (HFSX) \\
+\bottomrule
+\end{tabular}
+\caption{HFS+ Specifications}
+\end{table}
+
+\section{Volume Structure}
+
+HFS+ volumes are structured similarly to HFS but with enhanced metadata structures.
+
+\subsection{Volume Layout}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{Location} & \textbf{Name} & \textbf{Description} \\
+\midrule
+Byte 0 & Reserved & Boot sector (512 bytes) \\
+Byte 512 & Reserved & Additional boot area (512 bytes) \\
+Byte 1024 & Volume Header & Primary volume metadata \\
+... & Allocation Bitmap & Volume space allocation map \\
+... & Allocation File & B-tree of allocation bitmap extents \\
+... & Extents Overflow File & B-tree of file extent records \\
+... & Catalog File & B-tree of all files and folders \\
+... & Attributes File & B-tree of extended attributes \\
+... & Startup File & Boot loader for non-Mac systems \\
+... & Data Area & File contents and special files \\
+-1024 & Alternate VH & Backup copy of Volume Header \\
+\bottomrule
+\end{tabular}
+\caption{HFS+ Volume Layout}
+\end{table}
+
+\section{Volume Header}
+
+The Volume Header is the primary metadata structure, located at byte offset 1024 from the start of the volume.
+
+\subsection{Volume Header Structure}
+
+\begin{longtable}{llp{6cm}}
+\toprule
+\textbf{Field} & \textbf{Offset} & \textbf{Description} \\
+\midrule
+\endhead
+signature & +0 & Volume signature (0x482B = 'H+' for HFS+, 0x4858 = 'HX' for HFSX) \\
+version & +2 & Version number (4 for HFS+, 5 for HFSX) \\
+attributes & +4 & Volume attributes (see below) \\
+lastMountedVersion & +8 & Signature of OS that last mounted volume \\
+journalInfoBlock & +12 & Starting block of journal info \\
+createDate & +16 & Volume creation date (HFS+ time) \\
+modifyDate & +20 & Last modification date \\
+backupDate & +24 & Last backup date \\
+checkedDate & +28 & Last fsck date \\
+fileCount & +32 & Number of files on volume \\
+folderCount & +36 & Number of folders on volume \\
+blockSize & +40 & Allocation block size (bytes) \\
+totalBlocks & +44 & Total allocation blocks \\
+freeBlocks & +48 & Free allocation blocks \\
+nextAllocation & +52 & Next unused allocation block \\
+rsrcClumpSize & +56 & Default resource fork clump size \\
+dataClumpSize & +60 & Default data fork clump size \\
+nextCatalogID & +64 & Next unused Catalog Node ID \\
+writeCount & +68 & Volume write count \\
+encodingsBitmap & +72 & Text encodings used (64 bits) \\
+finderInfo & +80 & Finder information (32 bytes) \\
+allocationFile & +112 & Fork data for allocation file (80 bytes) \\
+extentsFile & +192 & Fork data for extents file (80 bytes) \\
+catalogFile & +272 & Fork data for catalog file (80 bytes) \\
+attributesFile & +352 & Fork data for attributes file (80 bytes) \\
+startupFile & +432 & Fork data for startup file (80 bytes) \\
+\bottomrule
+\caption{Volume Header Fields (total size: 512 bytes)}
+\end{longtable}
+
+\subsection{Critical Volume Header Fields}
+
+\subsubsection{signature}
+\begin{itemize}
+    \item \textbf{HFS+}: \texttt{0x482B} ('H+' in ASCII)
+    \item \textbf{HFSX}: \texttt{0x4858} ('HX' in ASCII)
+    \item Identifies volume type
+    \item \textbf{Validation}: mkfs.hfs+ sets to \texttt{0x482B}
+\end{itemize}
+
+\subsubsection{version}
+\begin{itemize}
+    \item \textbf{HFS+}: 4
+    \item \textbf{HFSX}: 5
+    \item Indicates filesystem variant
+    \item \textbf{Validation}: mkfs.hfs+ sets to 4
+\end{itemize}
+
+\subsubsection{attributes (Volume Attributes)}
+32-bit flags field:
+\begin{itemize}
+    \item Bit 0-6: Reserved
+    \item Bit 7 (0x0080): Volume is locked by hardware
+    \item Bit 8 (0x0100): Volume unmounted cleanly
+    \item Bit 9 (0x0200): Volume has bad blocks
+    \item Bit 10 (0x0400): Volume needs consistency check
+    \item Bit 11 (0x0800): Catalog IDs wrapped around
+    \item Bit 12 (0x1000): Unused node fix required
+    \item Bit 13 (0x2000): Volume is journaled
+    \item Bit 14 (0x4000): Volume is software locked
+    \item Bit 15-31: Reserved
+\end{itemize}
+
+\textbf{Important}: mkfs.hfs+ sets bit 8 (0x0100) to indicate clean unmount.
+
+\subsubsection{nextCatalogID}
+\begin{itemize}
+    \item Minimum value: 16
+    \item Reserved IDs 1-15:
+    \begin{itemize}
+        \item 1 = Root folder's parent
+        \item 2 = Root folder
+        \item 3 = Extents overflow file
+        \item 4 = Catalog file
+        \item 5 = Bad block file
+        \item 6 = Allocation bitmap file
+        \item 7 = Startup file
+        \item 8 = Attributes file
+        \item 14 = Journal file
+        \item 15 = Journal info block
+    \end{itemize}
+    \item \textbf{Validation}: Must be >= 16
+\end{itemize}
+
+\subsubsection{rsrcClumpSize and dataClumpSize}
+\begin{itemize}
+    \item Default allocation sizes for extending forks
+    \item \textbf{Must be non-zero}
+    \item Typically set to \texttt{blockSize * 4}
+    \item Reduces fragmentation
+    \item \textbf{Validation}: mkfs.hfs+ initializes both correctly
+\end{itemize}
+
+\subsection{Alternate Volume Header}
+
+Located at the second-to-last sector of the volume:
+\begin{equation}
+\text{Alternate VH offset} = \text{volume\_size} - 1024 \text{ bytes}
+\end{equation}
+
+\textbf{Purpose}: Recovery if primary Volume Header is corrupted.
+
+\textbf{Maintenance}: Updated simultaneously with primary VH.
+
+\section{HFS+ B-Trees}
+
+HFS+ uses B-trees extensively for efficient data organization. All B-trees follow the same structure but contain different record types.
+
+\subsection{B-Tree Structure}
+
+Each B-tree consists of:
+\begin{itemize}
+    \item \textbf{Header node}: B-tree metadata (first node, index 0)
+    \item \textbf{Map nodes}: Allocation bitmap for B-tree nodes
+    \item \textbf{Index nodes}: Internal nodes with pointers to child nodes
+    \item \textbf{Leaf nodes}: Contain actual data records
+\end{itemize}
+
+\subsection{B-Tree Header Record}
+
+Located in the first node of each B-tree:
+
+\begin{longtable}{llp{6cm}}
+\toprule
+\textbf{Field} & \textbf{Offset} & \textbf{Description} \\
+\midrule
+\endhead
+treeDepth & +0 & Current depth of tree (1-based) \\
+rootNode & +2 & Node number of root node \\
+leafRecords & +4 & Number of leaf records \\
+firstLeafNode & +8 & Node number of first leaf \\
+lastLeafNode & +12 & Node number of last leaf \\
+nodeSize & +16 & Size of each node (bytes) \\
+maxKeyLength & +18 & Maximum key length \\
+totalNodes & +20 & Total nodes in tree \\
+freeNodes & +24 & Number of free nodes \\
+reserved1 & +28 & Reserved \\
+clumpSize & +32 & Clump size for file \\
+btreeType & +36 & Type of B-tree (0=HFS, 128=HFS+) \\
+keyCompareType & +37 & Key comparison method \\
+attributes & +38 & B-tree attributes \\
+reserved3 & +42 & Reserved (76 bytes) \\
+\bottomrule
+\caption{B-Tree Header Record}
+\end{longtable}
+
+\subsection{Catalog File}
+
+The Catalog File is a B-tree containing all files and folders on the volume.
+
+\subsubsection{Catalog Keys}
+\begin{itemize}
+    \item \textbf{keyLength}: 2 bytes
+    \item \textbf{parentID}: 4 bytes (Parent folder CNID)
+    \item \textbf{nodeName}: Variable-length Unicode string
+\end{itemize}
+
+\subsubsection{Catalog Record Types}
+\begin{enumerate}
+    \item \textbf{Folder Record (0x0001)}: Directory metadata
+    \item \textbf{File Record (0x0002)}: File metadata and fork information
+    \item \textbf{Folder Thread (0x0003)}: Maps CNID to parent folder
+    \item \textbf{File Thread (0x0004)}: Maps file CNID to parent folder
+\end{enumerate}
+
+\subsubsection{File Record Structure}
+\begin{itemize}
+    \item recordType: 0x0002
+    \item flags: File flags
+    \item fileID: Catalog Node ID
+    \item createDate, modifyDate: Timestamps
+    \item permissions: Unix permissions
+    \item userInfo, finderInfo: Finder metadata
+    \item textEncoding: Filename encoding hint
+    \item dataFork: Fork data for data fork (80 bytes)
+    \item resourceFork: Fork data for resource fork (80 bytes)
+\end{itemize}
+
+\subsection{Extents Overflow File}
+
+B-tree storing additional extent records when a file's fork exceeds the 8 extents stored in the catalog.
+
+\subsubsection{Extent Key}
+\begin{itemize}
+    \item keyLength: 2 bytes
+    \item forkType: 0x00 (data) or 0xFF (resource)
+    \item fileID: Catalog Node ID
+    \item startBlock: Starting allocation block
+\end{itemize}
+
+\subsubsection{Extent Descriptor}
+\begin{itemize}
+    \item startBlock: Starting allocation block (4 bytes)
+    \item blockCount: Number of contiguous blocks (4 bytes)
+\end{itemize}
+
+\subsection{Attributes File}
+
+B-tree storing extended attributes (metadata) for files and folders.
+
+\subsubsection{Supported Attributes}
+\begin{itemize}
+    \item Extended attributes (xattrs)
+    \item Access Control Lists (ACLs)
+    \item Resource fork data (if not inline)
+    \item Compressed data (HFS+ compression)
+\end{itemize}
+
+\section{Journaling}
+
+HFS+ supports optional journaling for filesystem consistency after crashes.
+
+\subsection{Journal Structure}
+
+\begin{itemize}
+    \item \textbf{Journal Info Block}: Located at block specified in Volume Header
+    \item \textbf{Journal Buffer}: Circular buffer of transactions
+    \item \textbf{Transaction Records}: Logged filesystem changes
+\end{itemize}
+
+\subsection{Journal Operation}
+
+\begin{enumerate}
+    \item \textbf{Begin Transaction}: Start logging changes
+    \item \textbf{Log Metadata Changes}: Write changes to journal buffer
+    \item \textbf{Commit Transaction}: Mark transaction complete
+    \item \textbf{Apply Changes}: Write changes to filesystem
+    \item \textbf{Release Transaction}: Free journal space
+\end{enumerate}
+
+\subsection{Journal Replay}
+
+After unclean unmount:
+\begin{enumerate}
+    \item fsck.hfs+ detects journal
+    \item Scans journal for uncommitted transactions
+    \item Replays committed but unapplied transactions
+    \item Marks volume clean
+\end{enumerate}
+
+\subsection{Linux Compatibility Warning}
+
+\textbf{CRITICAL}: The Linux HFS+ kernel driver does NOT support journaling.
+
+\begin{itemize}
+    \item Journaled volumes may mount read-only automatically
+    \item Journal changes are ignored
+    \item Risk of data corruption on unclean shutdown
+    \item fsck.hfs+ can replay journal, but Linux won't maintain it
+\end{itemize}
+
+\textbf{Recommendation}: For Linux systems, create HFS+ volumes without journaling (omit \texttt{-j} option in mkfs.hfs+).
+
+\section{Date Representation}
+
+HFS+ uses 32-bit unsigned integers for dates:
+\begin{center}
+\textbf{Seconds since January 1, 1904 00:00:00 GMT}
+\end{center}
+
+\subsection{Y2K40 Problem}
+
+Maximum date with 32-bit unsigned:
+\begin{equation}
+1904 + \frac{2^{32}}{365.25 \times 24 \times 3600} \approx \text{February 6, 2040}
+\end{equation}
+
+\textbf{Implementation}: hfsutils uses \texttt{hfs\_get\_safe\_time()} to ensure dates stay within valid range.
+
+\section{Unicode Filenames}
+
+HFS+ stores filenames as UTF-16 (fully decomposed).
+
+\subsection{Normalization}
+
+HFS+ uses a special Unicode normalization similar to NFD:
+\begin{itemize}
+    \item Fully decomposed (e.g., é → e + combining acute)
+    \item Case-insensitive comparison (HFS+) or case-sensitive (HFSX)
+    \item Maximum 255 UTF-16 code units
+\end{itemize}
+
+\subsection{Character Restrictions}
+
+Filenames cannot contain:
+\begin{itemize}
+    \item Colon (:) - path separator
+    \item NULL character
+\end{itemize}
+
+\section{HFS+ vs HFSX}
+
+HFSX is a variant of HFS+ with case-sensitive filename comparison.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Feature} & \textbf{HFS+} & \textbf{HFSX} \\
+\midrule
+Signature & 0x482B ('H+') & 0x4858 ('HX') \\
+Version & 4 & 5 \\
+Case sensitivity & No & Yes \\
+Filename comparison & Case-insensitive & Case-sensitive \\
+"File.txt" = "file.txt" & Yes & No \\
+\bottomrule
+\end{tabular}
+\caption{HFS+ vs HFSX}
+\end{table}
+
+\textbf{Note}: hfsutils mkfs.hfs+ creates standard HFS+ volumes (case-insensitive). HFSX support is not currently implemented.
+
+\section{Compatibility Considerations}
+
+\subsection{macOS}
+\begin{itemize}
+    \item Native support for HFS+ and HFSX
+    \item Full journaling support
+    \item All extended attributes supported
+    \item APFS is now default (macOS 10.13+)
+\end{itemize}
+
+\subsection{Linux}
+\begin{itemize}
+    \item Kernel module \texttt{hfsplus} required
+    \item \textbf{No journaling support in kernel driver}
+    \item Basic read/write support
+    \item Some extended attributes supported
+    \item May mount journaled volumes read-only for safety
+\end{itemize}
+
+\subsection{FreeBSD/OpenBSD/NetBSD}
+\begin{itemize}
+    \item Native HFS+ read support
+    \item Write support via FUSE
+    \item No journaling support
+\end{itemize}
+
+\subsection{Windows}
+\begin{itemize}
+    \item No native HFS+ support
+    \item Third-party drivers available (Paragon, MacDrive)
+    \item Boot Camp drivers provide read-only access
+\end{itemize}
